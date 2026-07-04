@@ -1,0 +1,266 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../core/constants/couriers.dart';
+import '../../core/providers.dart';
+import '../../core/strings_ko.dart';
+import '../parcels/models/parcel.dart';
+
+final todayParcelsProvider = StreamProvider<List<Parcel>>(
+  (ref) => ref.watch(parcelRepositoryProvider).watchAll(),
+);
+
+class TodayDashboardScreen extends ConsumerWidget {
+  const TodayDashboardScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final parcelsAsync = ref.watch(todayParcelsProvider);
+    return Scaffold(
+      appBar: AppBar(title: const Text(StringsKo.todaySummaryTitle)),
+      body: parcelsAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, _) => Center(child: Text('$e')),
+        data: (parcels) {
+          final today = DateUtils.dateOnly(DateTime.now());
+          final ordered = _ordered(parcels);
+          final inTransit = _inTransit(parcels);
+          final dueToday = _dueToday(parcels, today);
+          final allEmpty =
+              ordered.isEmpty && inTransit.isEmpty && dueToday.isEmpty;
+
+          if (allEmpty) {
+            return Center(
+              child: Text(
+                StringsKo.todayAllClear,
+                style: Theme.of(context).textTheme.bodyLarge,
+              ),
+            );
+          }
+
+          return ListView(
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
+            children: [
+              _SummaryStrip(
+                ordered: ordered.length,
+                inTransit: inTransit.length,
+                dueToday: dueToday.length,
+              ),
+              const SizedBox(height: 12),
+              _TodaySection(
+                title: StringsKo.todayOrdered,
+                icon: Icons.receipt_long_outlined,
+                parcels: ordered,
+              ),
+              _TodaySection(
+                title: StringsKo.todayInTransit,
+                icon: Icons.local_shipping_outlined,
+                parcels: inTransit,
+              ),
+              _TodaySection(
+                title: StringsKo.todayDue,
+                icon: Icons.event_available_outlined,
+                parcels: dueToday,
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  List<Parcel> _ordered(List<Parcel> parcels) {
+    return parcels
+        .where(
+          (p) =>
+              p.status == ParcelStatus.registered ||
+              p.status == ParcelStatus.preparing,
+        )
+        .toList()
+      ..sort((a, b) => b.registeredAt.compareTo(a.registeredAt));
+  }
+
+  List<Parcel> _inTransit(List<Parcel> parcels) {
+    return parcels
+        .where(
+          (p) =>
+              p.status == ParcelStatus.pickedUp ||
+              p.status == ParcelStatus.inTransit,
+        )
+        .toList()
+      ..sort((a, b) => b.registeredAt.compareTo(a.registeredAt));
+  }
+
+  List<Parcel> _dueToday(List<Parcel> parcels, DateTime today) {
+    return parcels.where((p) {
+      if (p.status.isTerminal) return false;
+      if (p.status == ParcelStatus.outForDelivery) return true;
+      final expected = p.expectedArrivalDate;
+      if (expected == null) return false;
+      return DateUtils.isSameDay(expected, today);
+    }).toList()..sort((a, b) => b.registeredAt.compareTo(a.registeredAt));
+  }
+}
+
+class _SummaryStrip extends StatelessWidget {
+  final int ordered;
+  final int inTransit;
+  final int dueToday;
+
+  const _SummaryStrip({
+    required this.ordered,
+    required this.inTransit,
+    required this.dueToday,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: _SummaryItem(label: StringsKo.todayOrdered, value: ordered),
+        ),
+        Expanded(
+          child: _SummaryItem(
+            label: StringsKo.todayInTransit,
+            value: inTransit,
+          ),
+        ),
+        Expanded(
+          child: _SummaryItem(label: StringsKo.todayDue, value: dueToday),
+        ),
+      ],
+    );
+  }
+}
+
+class _SummaryItem extends StatelessWidget {
+  final String label;
+  final int value;
+
+  const _SummaryItem({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: Container(
+        height: 72,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+        decoration: BoxDecoration(
+          border: Border.all(color: colors.outlineVariant),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              '$value',
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(
+                context,
+              ).textTheme.labelSmall?.copyWith(color: colors.onSurfaceVariant),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TodaySection extends StatelessWidget {
+  final String title;
+  final IconData icon;
+  final List<Parcel> parcels;
+
+  const _TodaySection({
+    required this.title,
+    required this.icon,
+    required this.parcels,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 18),
+              const SizedBox(width: 8),
+              Text(
+                '$title ${parcels.length}',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          if (parcels.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Text(
+                StringsKo.todaySectionEmpty,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            )
+          else
+            for (final parcel in parcels) _TodayParcelTile(parcel: parcel),
+        ],
+      ),
+    );
+  }
+}
+
+class _TodayParcelTile extends StatelessWidget {
+  final Parcel parcel;
+
+  const _TodayParcelTile({required this.parcel});
+
+  @override
+  Widget build(BuildContext context) {
+    final courierName =
+        Couriers.byCode(parcel.courierCode)?.nameKo ?? parcel.courierCode;
+    return Card(
+      child: ListTile(
+        onTap: () => context.push('/parcel/${parcel.id}'),
+        title: Text(
+          parcel.productName ?? StringsKo.unknownProduct,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        subtitle: Text(
+          [
+            courierName,
+            if (parcel.mallName != null) parcel.mallName!,
+            if (!parcel.trackingNumber.startsWith('cp:')) parcel.trackingNumber,
+          ].join(' · '),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        trailing: Chip(
+          label: Text(
+            parcel.status.labelKo,
+            style: const TextStyle(fontSize: 12, color: Colors.white),
+          ),
+          backgroundColor: parcel.status.color,
+          visualDensity: VisualDensity.compact,
+          side: BorderSide.none,
+        ),
+      ),
+    );
+  }
+}

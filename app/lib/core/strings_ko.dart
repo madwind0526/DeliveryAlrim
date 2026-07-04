@@ -37,6 +37,12 @@ abstract final class StringsKo {
   static const dailyTitle = '일별 배송';
   static const monthlyTitle = '월별 배송';
   static const dayEmpty = '이 날짜의 배송이 없습니다';
+  static const todaySummaryTitle = '오늘 배송 현황';
+  static const todayOrdered = '주문/준비';
+  static const todayInTransit = '배달 중';
+  static const todayDue = '오늘 배달 예정';
+  static const todayAllClear = '오늘 확인할 배송이 없습니다';
+  static const todaySectionEmpty = '해당 배송이 없습니다';
   static const expectedBadge = '도착 예정';
   static const deliveredBadge = '배달완료';
 

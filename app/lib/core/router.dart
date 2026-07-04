@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../features/calendar/calendar_screen.dart';
 import '../features/debug/debug_insert_screen.dart';
 import '../features/debug/replay_screen.dart';
+import '../features/daily/today_dashboard_screen.dart';
 import '../features/preferences/filter_screen.dart';
 import '../features/preferences/settings_screen.dart';
 import '../features/preferences/user_sources_screen.dart';
@@ -29,7 +30,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: '/daily',
-                builder: (_, _) => const CalendarScreen.daily(),
+                builder: (_, _) => const TodayDashboardScreen(),
               ),
             ],
           ),
