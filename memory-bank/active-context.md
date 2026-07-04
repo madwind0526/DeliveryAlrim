@@ -2,10 +2,9 @@
 
 ## Current Focus
 
-- Wave 1 진행 중: Flutter 프로젝트(Windows+Android 타깃) 생성 + PC 모드 골격
-- 로컬 인증(AuthRepository) + 로컬 저장소(ParcelRepository, drift) + 배송 목록 UI + 디버그 삽입
-- PC-first 전략 확정: Supabase/Google 로그인/실기기는 Wave 4~5로 연기
-- 참고 패턴: C:\Claude\BlueTooth-Comm\mesh_comm (Platform.isWindows 분기, sqflite ffi)
+- Wave 1 완료: PC 모드 골격 (로컬 인증, drift 저장소, 배송 목록 UI, 디버그 삽입)
+- 다음: Wave 2 — 파싱 엔진 + fixture 코퍼스(알림톡/SMS/메일 샘플) + 주입 디버그 화면
+- 사용자에게 요청할 것: 실제 받은 택배 알림/문자/메일 텍스트 샘플 (fixture 정확도용)
 
 <!-- 
 규칙:
