@@ -1,0 +1,33 @@
+# Secrets — never commit API keys
+.env
+.env.*
+*.key
+app/android/key.properties
+app/android/app/*.jks
+
+# Flutter / Dart (app/)
+app/build/
+app/.dart_tool/
+app/.flutter-plugins
+app/.flutter-plugins-dependencies
+app/.packages
+app/android/.gradle/
+app/android/local.properties
+app/ios/Pods/
+app/ios/.symlinks/
+*.iml
+
+# Generated code
+app/**/*.g.dart
+app/**/*.freezed.dart
+
+# Supabase local dev
+supabase/.temp/
+supabase/.branches/
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+Thumbs.db
+.DS_Store
