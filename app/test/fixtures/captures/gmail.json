@@ -1,0 +1,47 @@
+[
+  {
+    "id": "gmail_gmarket_shipped",
+    "note": "Synthetic: Gmarket shipping-notice email, courier detected from keyword",
+    "channel": "gmail",
+    "sender": "no-reply@gmarket.co.kr",
+    "title": "[지마켓] 상품이 발송되었습니다",
+    "body": "안녕하세요, 지마켓입니다.\n주문하신 상품이 판매자에 의해 발송되었습니다.\n\n상품명 : 로지텍 무선 마우스 M331\n택배사 : 롯데택배\n운송장번호 : 4098765432109\n주문번호 : 2607021234567\n\n배송조회는 마이페이지에서 확인하세요.",
+    "capturedAt": "2026-07-03T11:20:00",
+    "expected": {
+      "matched": true,
+      "courierCode": "lotte",
+      "trackingNumber": "4098765432109",
+      "status": "preparing",
+      "productName": "로지텍 무선 마우스 M331"
+    }
+  },
+  {
+    "id": "gmail_11st_shipping_started",
+    "note": "Synthetic: 11st shipping-started email with CJ invoice",
+    "channel": "gmail",
+    "sender": "order@11st.co.kr",
+    "title": "[11번가] 배송이 시작되었습니다",
+    "body": "고객님, 주문하신 상품의 배송이 시작되었습니다.\n\n상품명 : 시원한 여름 이불 세트 Q\n택배사 : CJ대한통운\n송장번호 : 641234567893\n\n감사합니다.",
+    "capturedAt": "2026-07-03T13:45:00",
+    "expected": {
+      "matched": true,
+      "courierCode": "cj",
+      "trackingNumber": "641234567893",
+      "status": "in_transit",
+      "productName": "시원한 여름 이불 세트 Q"
+    }
+  },
+  {
+    "id": "gmail_newsletter_negative",
+    "note": "Negative: shopping newsletter, no parcel info",
+    "channel": "gmail",
+    "sender": "news@shopping.example.com",
+    "title": "이번 주 특가! 최대 70% 할인",
+    "body": "여름맞이 특가전이 시작되었습니다. 에어컨, 선풍기, 냉감 침구까지! 지금 확인해 보세요.\n수신거부: 링크",
+    "capturedAt": "2026-07-04T06:00:00",
+    "expected": {
+      "matched": false,
+      "reason": "noRuleMatched"
+    }
+  }
+]

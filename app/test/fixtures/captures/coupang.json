@@ -1,0 +1,48 @@
+[
+  {
+    "id": "coupang_delivered_real",
+    "note": "Real sample: Coupang delivered, order number instead of tracking number",
+    "channel": "mall_app",
+    "packageName": "com.coupang.mobile",
+    "title": "배송 완료",
+    "body": "[쿠팡] 1박스 문 앞(으)로 배송했습니다.\n주문번호: 3100174954680\nhttps://coupa.ng/a/7K3kinhuYmMG",
+    "capturedAt": "2026-07-03T19:44:00",
+    "expected": {
+      "matched": true,
+      "courierCode": "coupang_direct",
+      "trackingNumberPrefix": "cp:",
+      "status": "delivered"
+    }
+  },
+  {
+    "id": "coupang_shipping_started",
+    "note": "Synthetic: Coupang shipping-started for the SAME order as coupang_delivered_real — engine must produce the same synthesized key",
+    "channel": "mall_app",
+    "packageName": "com.coupang.mobile",
+    "title": "배송 시작",
+    "body": "[쿠팡] 주문하신 상품의 배송 시작! 오늘 도착 예정입니다.\n주문번호: 3100174954680\nhttps://coupa.ng/a/7K3kinhuYmMG",
+    "capturedAt": "2026-07-03T09:12:00",
+    "expected": {
+      "matched": true,
+      "courierCode": "coupang_direct",
+      "trackingNumberPrefix": "cp:",
+      "status": "out_for_delivery"
+    }
+  },
+  {
+    "id": "coupang_order_complete_no_order_no",
+    "note": "Synthetic: Coupang app push without order number → product-based key",
+    "channel": "mall_app",
+    "packageName": "com.coupang.mobile",
+    "title": "주문 완료",
+    "body": "트레비 탄산수 500ml 20입 외 1건 주문이 완료되었습니다. 내일 도착 예정 상품이 포함되어 있어요.",
+    "capturedAt": "2026-07-02T22:03:00",
+    "expected": {
+      "matched": true,
+      "courierCode": "coupang_direct",
+      "trackingNumberPrefix": "cp:",
+      "status": "registered",
+      "productName": "트레비 탄산수 500ml 20입"
+    }
+  }
+]

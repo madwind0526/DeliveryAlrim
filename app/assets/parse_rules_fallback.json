@@ -1,0 +1,37 @@
+{
+  "rulesVersion": 1,
+  "rules": [
+    {
+      "id": "coupang_delivered",
+      "sourceTypes": ["mall_app", "kakao", "sms"],
+      "bodyRegex": "\\[쿠팡\\][^\\n]*배송했습니다",
+      "courierCode": "coupang_direct",
+      "statusHint": "delivered",
+      "priority": 10
+    },
+    {
+      "id": "coupang_out_for_delivery",
+      "sourceTypes": ["mall_app", "kakao", "sms"],
+      "bodyRegex": "\\[쿠팡\\][^\\n]*배송\\s*시작",
+      "courierCode": "coupang_direct",
+      "statusHint": "out_for_delivery",
+      "priority": 11
+    },
+    {
+      "id": "coupang_app_order_complete",
+      "sourceTypes": ["mall_app"],
+      "packageName": "com.coupang.mobile",
+      "bodyRegex": "주문이 완료되었습니다",
+      "productRegex": "^(?<product>.+?)(?:\\s*외\\s*\\d+건)?\\s*주문이 완료",
+      "courierCode": "coupang_direct",
+      "statusHint": "registered",
+      "priority": 12
+    },
+    {
+      "id": "labeled_invoice_generic",
+      "sourceTypes": ["sms", "kakao", "gmail", "mall_app"],
+      "bodyRegex": "(?:운송장|송장|등기)\\s*번호\\s*[:：]?\\s*(?<invoice>\\d[\\d\\-]{8,15}\\d)",
+      "priority": 50
+    }
+  ]
+}

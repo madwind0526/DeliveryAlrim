@@ -20,6 +20,12 @@ class ParcelListScreen extends ConsumerWidget {
         appBar: AppBar(
           title: const Text(StringsKo.parcelListTitle),
           actions: [
+            if (kDebugMode)
+              IconButton(
+                tooltip: StringsKo.replayTitle,
+                icon: const Icon(Icons.science_outlined),
+                onPressed: () => context.push('/debug/replay'),
+              ),
             IconButton(
               tooltip: StringsKo.logout,
               icon: const Icon(Icons.logout),

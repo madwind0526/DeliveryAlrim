@@ -1,0 +1,93 @@
+[
+  {
+    "id": "sms_cj_delivered_real",
+    "note": "Real sample: CJ delivered SMS with labeled invoice/product/sender",
+    "channel": "sms",
+    "sender": "15881255",
+    "title": null,
+    "body": "[Web발신][CJ대한통운_배송완료]\n\n일요일에도 신속하게!!\n모두를 위한 매일매일 배송\nCJ대한통운 매일오네(O-NE)\n\n고객님의 상품이 배송 완료되었습니다.\nㆍ보내는분 : 복지몰\nㆍ상품명 : ( 10 ) [11116]온라인) 라이트스탠다드참치 85g^( 2 ) [11150]온라인) 고추참치 85g\nㆍ인수자(위탁장소) : 문앞\nㆍ운송장번호 : 300211029394\n\n모두를 위한 단 하나의 배송!\nCJ대한통운 오네\n\n※ CJ대한통운 고객센터 : 1588-1255",
+    "capturedAt": "2026-07-03T14:22:00",
+    "expected": {
+      "matched": true,
+      "courierCode": "cj",
+      "trackingNumber": "300211029394",
+      "status": "delivered",
+      "productName": "( 10 ) [11116]온라인) 라이트스탠다드참치 85g^( 2 ) [11150]온라인) 고추참치 85g",
+      "mallName": "복지몰"
+    }
+  },
+  {
+    "id": "sms_hanjin_out_for_delivery",
+    "note": "Synthetic: Hanjin out-for-delivery SMS",
+    "channel": "sms",
+    "sender": "15880011",
+    "title": null,
+    "body": "[Web발신]\n[한진택배] 고객님의 상품이 배송 출발하였습니다.\n■ 운송장번호: 512345678901\n■ 상품명: 캠핑 접이식 의자 2개 세트\n■ 배송기사: 김배송 (010-****-1234)\n금일 중 도착합니다.",
+    "capturedAt": "2026-07-04T08:31:00",
+    "expected": {
+      "matched": true,
+      "courierCode": "hanjin",
+      "trackingNumber": "512345678901",
+      "status": "out_for_delivery",
+      "productName": "캠핑 접이식 의자 2개 세트"
+    }
+  },
+  {
+    "id": "sms_epost_ready",
+    "note": "Synthetic: Korea Post uses 등기번호 label, 13 digits",
+    "channel": "sms",
+    "sender": "15881300",
+    "title": null,
+    "body": "[Web발신]\n[우체국택배] 고객님의 상품이 배달 준비중입니다.\n등기번호 : 6912345678901\n상품명 : 제주 감귤 5kg\n금일 배달됩니다.",
+    "capturedAt": "2026-07-04T09:05:00",
+    "expected": {
+      "matched": true,
+      "courierCode": "epost",
+      "trackingNumber": "6912345678901",
+      "status": "out_for_delivery",
+      "productName": "제주 감귤 5kg"
+    }
+  },
+  {
+    "id": "sms_logen_in_transit",
+    "note": "Synthetic: Logen in-transit SMS, hyphenated invoice",
+    "channel": "sms",
+    "sender": "15889988",
+    "title": null,
+    "body": "[Web발신]\n로젠택배 배송안내\n고객님의 상품이 배송 중입니다.\n운송장번호: 123-4567-8901\n상품명: 프린터 토너 2개\n조회: https://www.ilogen.com/web/personal/trace/12345678901",
+    "capturedAt": "2026-07-03T18:40:00",
+    "expected": {
+      "matched": true,
+      "courierCode": "logen",
+      "trackingNumber": "12345678901",
+      "status": "in_transit",
+      "productName": "프린터 토너 2개"
+    }
+  },
+  {
+    "id": "sms_bank_otp_negative",
+    "note": "Negative: bank OTP with digits must NOT become a parcel",
+    "channel": "sms",
+    "sender": "15889999",
+    "title": null,
+    "body": "[Web발신]\n[KB국민은행] 인증번호 [847293]을 입력해 주세요. 타인에게 절대 알려주지 마세요.",
+    "capturedAt": "2026-07-04T10:00:00",
+    "expected": {
+      "matched": false,
+      "reason": "noRuleMatched"
+    }
+  },
+  {
+    "id": "sms_coupang_ad_negative",
+    "note": "Negative: Coupang ad mentioning 쿠팡 but no delivery event",
+    "channel": "sms",
+    "sender": "080123456",
+    "title": null,
+    "body": "[Web발신](광고)쿠팡 로켓와우 멤버십 첫달 무료! 지금 가입하고 무료배송 혜택 받으세요. coupa.ng/promo123 무료수신거부 0808881234",
+    "capturedAt": "2026-07-04T11:00:00",
+    "expected": {
+      "matched": false,
+      "reason": "noRuleMatched"
+    }
+  }
+]

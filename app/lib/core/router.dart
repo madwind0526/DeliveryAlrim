@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../features/auth/login_screen.dart';
 import '../features/debug/debug_insert_screen.dart';
+import '../features/debug/replay_screen.dart';
 import '../features/parcels/parcel_list_screen.dart';
 import 'providers.dart';
 
@@ -46,6 +47,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/debug/insert',
         builder: (_, _) => const DebugInsertScreen(),
+      ),
+      GoRoute(
+        path: '/debug/replay',
+        builder: (_, _) => const ReplayScreen(),
       ),
     ],
   );

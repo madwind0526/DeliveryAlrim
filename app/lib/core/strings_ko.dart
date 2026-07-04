@@ -23,6 +23,22 @@ abstract final class StringsKo {
   static const arrivalToday = '오늘 도착 예정';
   static const arrivalTomorrow = '내일 도착 예정';
 
+  // Debug replay (parse injection)
+  static const replayTitle = '알림 주입 테스트 (디버그)';
+  static const channelLabel = '채널';
+  static const packageNameLabel = '패키지명 (선택)';
+  static const senderLabel = '발신자 (선택)';
+  static const notifTitleLabel = '제목 (선택)';
+  static const bodyLabel = '본문';
+  static const bodyEmpty = '본문을 입력해 주세요';
+  static const runParse = '파싱 실행';
+  static const parseMatched = '인식 성공';
+  static const parseRejected = '인식 실패';
+  static const matchedRuleLabel = '규칙';
+  static const registerParcelButton = '배송으로 등록';
+  static const registeredSnack = '배송 목록에 등록되었습니다';
+  static const rulesLoadError = '파싱 규칙을 불러오지 못했습니다';
+
   // Debug insert
   static const debugInsertTitle = '배송 수동 등록 (디버그)';
   static const courierLabel = '택배사';

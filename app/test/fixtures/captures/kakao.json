@@ -1,0 +1,49 @@
+[
+  {
+    "id": "kakao_welfare_order_complete_real",
+    "note": "Real sample: order-complete message WITHOUT tracking number → must be rejected",
+    "channel": "kakao",
+    "packageName": "com.kakao.talk",
+    "title": "복지포탈",
+    "body": "[복지포탈] 주문 완료 안내\n\n신*종님, 아래 상품 주문이 완료됐어요.\n\n■ 주문내용 \n- 상품명 : [김희선 PICK] BNR17 다이어트 유산균 모유유래   체지방감소 비에날씬프로 6개월+프로틴 14포 증정+보냉백 증정 외\n- 주문번호 : BA260702210729198\n- 결제금액(결제포인트) : 328,830원(328,830 P)\n- 주문일 : 2026.07.02\n\n■ 자세히보기\nhttps://sec.s-bluevery.com/mypage/PFLBCL14C003.do?ordrNo=BA260702210729198\n\n복지포탈 고객상담 1666-0829\n(평일 09:00~20:00, 토/일/공휴일 09:00~18:00 운영)",
+    "capturedAt": "2026-07-02T21:10:00",
+    "expected": {
+      "matched": false,
+      "reason": "noRuleMatched"
+    }
+  },
+  {
+    "id": "kakao_cj_out_for_delivery",
+    "note": "Synthetic: CJ 알림톡 delivery-today notice",
+    "channel": "kakao",
+    "packageName": "com.kakao.talk",
+    "title": "CJ대한통운",
+    "body": "안녕하세요, 신*종님.\n고객님의 상품이 오늘 배송 예정입니다.\n\n▶ 상품명 : 프리미엄 물티슈 100매 10팩\n▶ 운송장번호 : 641234567890\n▶ 보내는분 : 지마켓\n▶ 배송기사 : 박행복\n\n배송 조회: https://www.cjlogistics.com/ko/tool/parcel/tracking",
+    "capturedAt": "2026-07-04T07:55:00",
+    "expected": {
+      "matched": true,
+      "courierCode": "cj",
+      "trackingNumber": "641234567890",
+      "status": "out_for_delivery",
+      "productName": "프리미엄 물티슈 100매 10팩",
+      "mallName": "지마켓"
+    }
+  },
+  {
+    "id": "kakao_lotte_picked_up",
+    "note": "Synthetic: Lotte 알림톡 pickup-complete",
+    "channel": "kakao",
+    "packageName": "com.kakao.talk",
+    "title": "롯데택배",
+    "body": "[롯데택배] 상품 접수 안내\n고객님의 상품 집화가 완료되었습니다.\n\n상품명 : 콜롬비아 커피 원두 1kg\n운송장번호 : 4012345678901\n보내는분 : 커피창고\n\n배송 진행 상황은 롯데택배 앱에서 확인하실 수 있습니다.",
+    "capturedAt": "2026-07-03T16:12:00",
+    "expected": {
+      "matched": true,
+      "courierCode": "lotte",
+      "trackingNumber": "4012345678901",
+      "status": "picked_up",
+      "productName": "콜롬비아 커피 원두 1kg",
+      "mallName": "커피창고"
+    }
+  }
+]
