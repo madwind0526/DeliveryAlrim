@@ -3,7 +3,7 @@
 ## Current Wave
 
 - **Wave:** 4
-- **Status:** Wave 4 complete; Wave 5 ready (접근성 권한 활성화 후 실기기 수집 검증)
+- **Status:** Wave 5 in progress (접근성 수집 검증 성공, Flutter DB 브리지 필요)
 - **Cache Status:** CLEAN
 - **Last Checkpoint:** 2026-07-05 Wave 3 완료 커밋
 
@@ -16,7 +16,7 @@
 | 2 | 파싱 엔진 + fixture 코퍼스 15건 + 주입 디버그 화면 | Done |
 | 3 | 상세 타임라인 + 일별/월별 캘린더 + 도착일 휴리스틱 + 하단 내비 | Done |
 | 4 | Supabase 제거 + 로그인 제거 + 로컬 단일 사용자 모드 + 좌측 메뉴 UI | Done |
-| 5 | Android 실기기: 알림 리스너 + 카카오톡 채널 접근성 PoC + 이메일/SNS 모니터링 + 암호화 저장 | Ready |
+| 5 | Android 실기기: 알림 리스너 + 카카오톡 채널 접근성 PoC + 이메일/SNS 모니터링 + 암호화 저장 | In Progress |
 | 6 | 하드닝: 백그라운드 조회, 배터리 최적화, 로컬 알림, 릴리즈 APK | Planned |
 
 ## Session Notes
@@ -29,5 +29,7 @@
 - 카카오톡 특정 채널 읽기는 공식 API가 아니라 접근성 기반으로 진행한다. 삼성카드/CJ대한통운 알림톡 본문 추출 PoC 성공.
 - 2026-07-05 알림/접근성 PoC 발견사항을 knowledge로 flush 완료.
 - Supabase/Auth 제거 후 `flutter analyze`, `flutter test`, Windows build 성공.
-- Android `KakaoAccessibilityService` 추가 후 debug APK 빌드/설치 성공. 접근성 권한은 사용자 수동 활성화 필요.
+- Android `KakaoAccessibilityService` 추가 후 debug APK 빌드/설치 성공.
+- 접근성 서비스 라벨은 `체크쉬핑 카카오톡 수집`으로 표시됨.
+- CJ대한통운 채팅방 실서비스 검증: logcat `captured courier=cj invoice=594239221744 status=delivered sender=삼성전자`, SharedPreferences 저장 확인.
 - Windows에서 먼저 검증하고 Android로 확장한다.

@@ -74,6 +74,7 @@ Windows 카카오톡은 말풍선 텍스트가 UI Automation/Win32 텍스트 트
 **사용 시점:** 카카오톡 알림톡 채널에서 배송/주문 본문을 추출할 때
 
 삼성카드와 CJ대한통운 채널 실기기 PoC에서 알림톡 본문이 `com.kakao.talk:id/alimtalk_title` TextView의 `text` 속성에 노출됐다. 1차 수집은 이 resource-id를 우선 탐색하고, 다른 말풍선 타입은 `message`, `content-desc`, visible text 순서로 fallback 처리한다.
+실제 `KakaoAccessibilityService`에서도 CJ대한통운 채팅방에서 `courier=cj`, `invoice=594239221744`, `status=delivered`, `sender=삼성전자`를 logcat과 SharedPreferences에 저장하는 것을 확인했다.
 
 ```text
 primaryResourceId = "com.kakao.talk:id/alimtalk_title"

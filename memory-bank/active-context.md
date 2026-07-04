@@ -9,8 +9,10 @@
 - 핵심 수집 구조: 알림은 trigger + hint이고, 실제 배송 DB는 채널별 본문 획득 후 생성
 - 본문 획득 우선순위: 공식 API → IMAP/표준 프로토콜 → 공유/내보내기 → 접근성 보조 캡처 → 알림만 사용
 - Android 카카오톡 삼성카드/CJ대한통운 채널 모두 `com.kakao.talk:id/alimtalk_title`에서 알림톡 본문 추출 성공
-- Android `KakaoAccessibilityService` 1차 골격 추가, debug APK 설치 완료
-- 다음: 휴대폰에서 `체크쉬핑 카카오톡 수집` 접근성 권한 활성화 후 logcat 수집 검증
+- Android `KakaoAccessibilityService` 1차 골격 추가 및 debug APK 설치 완료
+- `체크쉬핑 카카오톡 수집` 접근성 서비스 활성화 확인
+- CJ대한통운 채팅방에서 실제 서비스 logcat/SharedPreferences 수집 검증 성공
+- 다음: 수집 결과를 Flutter local DB로 전달하는 브리지와 UI 상태 표시 구현
 
 <!-- 
 규칙:
