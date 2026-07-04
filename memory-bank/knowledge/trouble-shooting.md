@@ -61,6 +61,20 @@ intl: any
 
 `initializeDateFormatting('ko')` + `TableCalendar(locale: 'ko')`로 통일하면 안전. intl fallback은 'ko_KR'→'ko' 방향만 동작한다.
 
+## Windows 카카오톡 UI Automation 말풍선 미노출
+
+### 증상
+
+Windows 카카오톡 채팅창을 UI Automation/Win32 child window text로 조회해도 말풍선 본문이 나오지 않는다. 현재 열린 채팅창은 `EVA_VH_ListControl_Dblclk` 커스텀 컨트롤로 보였고, 접근성에서 읽힌 텍스트는 입력창 placeholder뿐이었다.
+
+### 원인
+
+PC 카카오톡 말풍선 목록이 표준 TextView/Document 아이템으로 노출되지 않는 커스텀 컨트롤로 렌더링된다.
+
+### 해결
+
+Windows에서는 채팅 영역 `Ctrl+A` / `Ctrl+C` 복사를 fixture 수집 fallback으로만 사용한다. 실제 Android 구현은 AccessibilityService에서 카카오톡 말풍선 노드를 직접 읽는다.
+
 <!-- 예시 형식:
 
 ## [문제 제목]

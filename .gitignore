@@ -25,6 +25,11 @@ app/**/*.freezed.dart
 supabase/.temp/
 supabase/.branches/
 
+# Local verification artifacts with private notification/chat content
+android_*.xml
+android_*.png
+kakaotalk_*_window.png
+
 # IDE / OS
 .idea/
 .vscode/

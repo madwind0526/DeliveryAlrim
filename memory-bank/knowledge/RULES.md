@@ -32,6 +32,30 @@
 **이유:** PC-first 개발 전략 — Windows에서 가짜 구현으로 검증 후 Android/Supabase 구현으로 교체 (docs/DESIGN.md §0).
 **적용 시점:** 새 플랫폼 의존 기능(알림, SMS, Gmail, 서버) 추가 시.
 
+## Supabase/Auth 없이 로컬 단일 사용자 앱
+
+**규칙:** Supabase, 서버 계정, 앱 로그인, 멀티 유저 기능을 만들지 않는다. 모든 배송 데이터와 설정은 로컬 저장소에 둔다.
+**이유:** 사용자가 개인용 Android 로컬 앱으로 방향을 변경했다. 외부 동기화보다 개인정보 보호와 단순한 로컬 운용을 우선한다.
+**적용 시점:** 저장소, 라우팅, 인증, 설정, 배포 범위 수정 시.
+
+## 알림은 trigger + hint로 취급
+
+**규칙:** Android 알림은 완성 데이터가 아니라 본문 획득 작업을 시작하는 trigger + hint로 저장한다. 실제 배송 DB는 공식 API, IMAP, 공유/내보내기, 접근성 보조 캡처, 알림 텍스트 순서로 확보한 본문을 기준으로 만든다.
+**이유:** 알림만으로는 운송장/상품/상태가 부족한 경우가 많다. 채널별 본문 획득을 분리해야 배송 DB 품질을 유지할 수 있다.
+**적용 시점:** NotificationListener, capture pipeline, parser, pending capture 상태 설계 시.
+
+## User 메뉴는 모니터링 소스 관리 전용
+
+**규칙:** User 메뉴는 앱 로그인용이 아니라 이메일/SNS/앱 패키지 모니터링 설정과 외부 계정 인증 정보 관리용이다. 민감 정보는 보안 저장소에 저장한다.
+**이유:** 앱 자체는 단일 사용자 로컬 모드이고, User 메뉴의 로그인은 Gmail/IMAP/SNS 등 외부 소스 접근 설정을 뜻한다.
+**적용 시점:** User 화면, settings schema, secure storage 연동 시.
+
+## 카카오톡 채널은 접근성 기반으로 수집
+
+**규칙:** 카카오톡 특정 채널 대화 읽기는 공식 API가 아니라 NotificationListenerService + AccessibilityService 조합으로 구현한다. 카카오톡 내부 DB 직접 접근은 사용하지 않는다.
+**이유:** 공식 API로 사용자의 카카오톡 채널 대화 내역을 읽는 안정 경로가 없고, Android app sandbox 때문에 일반 앱은 카카오톡 private DB를 읽을 수 없다. 실기기 PoC에서 알림톡 본문 노드 추출은 성공했다.
+**적용 시점:** Kakao capture, Android accessibility service, channel fetcher 구현 시.
+
 <!-- 예시 형식:
 
 ## [규칙 이름]

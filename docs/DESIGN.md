@@ -1,281 +1,348 @@
-# CheckShipping — Implementation Design
+# CheckShipping Design
 
-> 2026-07-04 설계 확정본. Wave 구현 시 이 문서를 기준으로 진행하고, 변경 사항은 이 문서에 반영한다.
+## 0. Direction Change
 
-## 0. Architecture Overview
+2026-07-05 기준으로 프로젝트 방향을 다음과 같이 변경한다.
 
-```
-[Android device]                                     [Supabase free tier]
-카톡 알림톡 / SMS알림 / 쿠팡앱 알림 ─┐
-                                    ├─ NotificationListenerService
-직접 SMS 읽기 (optional, flagged) ──┤        │
-Gmail API (on-device polling) ──────┘        ▼
-                              Rule engine (DB-driven rules, bundled fallback)
-                                             │ extract {courier, invoice, product, mall, status_hint}
-                                             ▼
-                              Local queue (drift) ──upsert──▶ parcels / tracking_events (RLS per user)
-                                                                    ▲
-                                        pg_cron ─▶ Edge Function `track-poll` ─▶ Sweet Tracker 조회 API
-                                                                    │
-                              Flutter UI (목록 / 일별·월별 캘린더) ◀─ Realtime + pull-to-refresh
-```
+1. **Supabase는 사용하지 않는다.**
+2. **앱 로그인은 없앤다.** 멀티 유저를 지원하지 않고, 사용자는 한 명으로 가정한다.
+3. 모든 자료는 로컬에 저장한다.
+4. Android 앱으로 만든다. iOS는 나중에 확장한다.
+5. Windows는 개발/테스트 목적이다. 먼저 Windows에서 테스트하고 문제가 없으면 Android로 확장한다.
+6. User 메뉴는 앱 계정 로그인이 아니라, 모니터링할 이메일/SNS/외부 서비스 계정 설정을 담당한다.
+7. 외부 계정 로그인 정보와 API 키는 로컬 보안 저장소에 암호화해서 저장한다.
 
-Key decisions:
+기존 Supabase/RLS/Edge Function/pg_cron 설계는 폐기한다. 이미 작성된 Supabase 관련 파일은 이후 정리 대상이다.
 
-- **PC-first dual-mode development** (BlueTooth-Comm 패턴 이식): Flutter 프로젝트는 Windows + Android 타깃을 동시에 가진다. 플랫폼 의존 기능은 인터페이스 뒤에 격리하고, Windows에서는 가짜/주입 구현으로 전체 파이프라인을 검증한 뒤 Android 실기기/실서버를 마지막에 연결한다.
-  - `CaptureSource` interface — Android: NotificationListenerService / Windows: fixture 파일 주입 + 디버그 화면
-  - `ParcelRepository` / `AuthRepository` interface — 초기: 로컬 drift(SQLite) + 로컬 프로필 / 이후: Supabase 구현으로 교체 (로컬 구현은 오프라인 큐·캐시로 계속 사용)
-  - `Platform.isWindows` 분기로 sqflite/drift ffi 초기화 등 처리 (BlueTooth-Comm `main.dart` 참조)
-  - 파싱 엔진·검증기·중복제거·상태 머신은 순수 Dart → 플랫폼 무관, fixture 코퍼스로 PC에서 완성
-- **Gmail parsing runs on-device** (WorkManager periodic task), not in an Edge Function. Keeps the OAuth refresh token in `flutter_secure_storage` instead of the server, reuses the same Google sign-in, and saves Edge Function invocations for the tracking poller.
-- **Raw notification text stays on-device** (local drift DB) for privacy; only extracted, structured parcel data goes to Supabase. The local raw store doubles as the replay/debug corpus.
-- **Parse rules are DB-driven** (`parse_rules` table, synced to the app with a version number, bundled JSON fallback) so kakao/mall template changes ship without an app release.
+## 1. Product Shape
 
-## 1. Repository Structure
+CheckShipping은 온라인 쇼핑 배송을 자동으로 모아 보여주는 개인용 Android 앱이다.
 
-Feature-first layout (capture, tracking, calendar are sharply distinct features; keeps the gnarly capture code quarantined).
+핵심 목표:
+
+- 내가 받을 배송을 한 화면에서 확인한다.
+- 카카오 알림톡, SMS 앱 알림, 쇼핑몰 앱 알림, 이메일, SNS 등에서 배송 정보를 자동 수집한다.
+- 업체별, 일별, 월별로 배송 현황을 확인한다.
+- 서버 계정 없이 로컬에서만 동작한다.
+- 외부 서비스 로그인 정보가 필요한 경우에도 내 기기 안에 암호화 저장한다.
+
+## 2. Runtime Architecture
 
 ```
-C:\Claude\CheckShipping\
-├── memory-bank/
-├── docs/DESIGN.md
-├── app/                                  # Flutter project (flutter create --org com.checkshipping)
-│   ├── android/app/src/main/AndroidManifest.xml   # listener service, POST_NOTIFICATIONS, (flagged) SMS perms
-│   ├── assets/parse_rules_fallback.json  # bundled snapshot of parse_rules
-│   ├── lib/
-│   │   ├── main.dart
-│   │   ├── app.dart                      # MaterialApp.router, ko_KR locale
-│   │   ├── core/
-│   │   │   ├── supabase_client.dart
-│   │   │   ├── router.dart               # go_router, auth redirect
-│   │   │   ├── theme.dart
-│   │   │   ├── constants/couriers.dart   # fixed courier set + Sweet Tracker codes
-│   │   │   └── local_db/local_db.dart    # drift: raw_captures, upload_queue, rule_cache
-│   │   ├── features/
-│   │   │   ├── auth/        (login_screen.dart, auth_repository.dart, auth_provider.dart)
-│   │   │   ├── parcels/     (parcel_list_screen.dart, parcel_detail_screen.dart,
-│   │   │   │                 parcel_repository.dart, models/parcel.dart, models/tracking_event.dart)
-│   │   │   ├── calendar/    (calendar_screen.dart, daily_list_view.dart, calendar_provider.dart)
-│   │   │   ├── capture/
-│   │   │   │   ├── notification_capture_service.dart   # listener bootstrap + callback isolate
-│   │   │   │   ├── sms_capture_service.dart            # optional, build-flag gated
-│   │   │   │   ├── gmail_capture_service.dart          # WorkManager task
-│   │   │   │   ├── parser/rule_engine.dart             # regex rules -> ExtractedParcel
-│   │   │   │   ├── parser/tracking_number_validator.dart  # per-courier regex + CJ check digit
-│   │   │   │   ├── parser/coupang_status_mapper.dart
-│   │   │   │   ├── dedupe/parcel_upserter.dart         # local dedupe + Supabase upsert + retry queue
-│   │   │   │   └── rules_sync.dart                     # parse_rules OTA sync
-│   │   │   ├── settings/    (settings_screen.dart, onboarding_screen.dart, permission_guide/)
-│   │   │   └── debug/       (replay_screen.dart, debug_insert_screen.dart)   # dev flavor only
-│   │   └── core/strings_ko.dart          # all UI strings in Korean, centralized
-│   └── pubspec.yaml
-└── supabase/
-    ├── config.toml
-    ├── migrations/
-    │   ├── 0001_init.sql                 # couriers, parcels, tracking_events, user_settings, RLS
-    │   ├── 0002_parse_rules.sql
-    │   └── 0003_cron.sql                 # pg_cron + pg_net schedule
-    └── functions/
-        ├── track-poll/index.ts           # scheduled poller
-        └── _shared/sweettracker.ts       # API client + level→status mapping
+Android notification listener
+  → NotificationInbox (trigger + hint)
+  → ChannelClassifier
+  → Channel-specific content fetcher
+  → RuleEngine
+  → ParcelRepository (local drift SQLite)
+  → Local tracking poller
+  → Flutter UI
 ```
 
-## 2. Supabase Schema (DDL sketch)
+Windows 테스트 모드:
 
-```sql
--- Fixed courier registry (seeded; readable by all authenticated users)
-create table couriers (
-  code text primary key,            -- 'cj', 'hanjin', 'lotte', 'epost', 'logen', 'coupang_direct'
-  name_ko text not null,            -- 'CJ대한통운'
-  sweettracker_code text,           -- '04' for CJ etc; NULL => not pollable (coupang_direct)
-  invoice_regex text not null,      -- e.g. '^[0-9]{10,12}$'
-  is_direct boolean not null default false   -- true => status from notifications only
-);
-
-create type parcel_status as enum
-  ('registered','preparing','picked_up','in_transit','out_for_delivery','delivered','expired','invalid');
--- UI labels: 등록됨/상품준비/집화/배송중/배송출발/배달완료/만료/번호오류
-
-create table parcels (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users on delete cascade,
-  courier_code text not null references couriers,
-  tracking_number text not null,    -- for coupang_direct: synthesized key 'cp:<sha1(product|date)>'
-  status parcel_status not null default 'registered',
-  product_name text, mall_name text,
-  source_channels text[] not null default '{}',   -- {'kakao','sms','gmail','coupang_app','manual'}
-  expected_arrival_date date,       -- drives 일별/월별 views
-  delivered_at timestamptz,
-  registered_at timestamptz not null default now(),
-  last_polled_at timestamptz, poll_fail_count int not null default 0,
-  unique (user_id, courier_code, tracking_number)   -- dedupe backstop
-);
-
-create table tracking_events (
-  id bigint generated always as identity primary key,
-  parcel_id uuid not null references parcels on delete cascade,
-  event_time timestamptz not null,
-  location text, status_level int,  -- Sweet Tracker level 1..6
-  description text,
-  unique (parcel_id, event_time, description)       -- idempotent upsert from poller
-);
-
-create table user_settings (
-  user_id uuid primary key references auth.users on delete cascade,
-  kakao_capture_enabled bool default true,
-  sms_capture_enabled bool default false,
-  gmail_connected bool default false,
-  updated_at timestamptz default now()
-);
-
--- OTA parse rules
-create table parse_rules (
-  id int primary key,
-  rules_version int not null,       -- monotonically increasing; app caches highest seen
-  source_type text not null,        -- 'kakao' | 'sms' | 'mall_app' | 'gmail'
-  package_name text,                -- 'com.kakao.talk', 'com.coupang.mobile'; NULL for sms/gmail
-  sender_match text,                -- SMS sender number regex / Gmail 'from' regex
-  title_match text,                 -- regex on notification title / email subject
-  body_regex text not null,         -- named groups: courier / invoice / product / mall
-  courier_code text,                -- force courier when regex can't capture it
-  status_hint text,                 -- for coupang_direct rules: maps to parcel_status
-  priority int not null default 100,
-  active bool not null default true
-);
-
--- Indexes
-create index parcels_user_active_idx on parcels (user_id, status);
-create index parcels_user_arrival_idx on parcels (user_id, expected_arrival_date);   -- daily/monthly
-create index parcels_user_delivered_idx on parcels (user_id, delivered_at);          -- monthly history
-create index parcels_pollable_idx on parcels (last_polled_at)
-  where status not in ('delivered','expired','invalid');                             -- poller scan
-create index tracking_events_parcel_idx on tracking_events (parcel_id, event_time desc);
-
--- RLS
-alter table parcels enable row level security;
-create policy parcels_own on parcels for all
-  using (user_id = auth.uid()) with check (user_id = auth.uid());
-alter table tracking_events enable row level security;
-create policy events_own on tracking_events for select
-  using (exists (select 1 from parcels p where p.id = parcel_id and p.user_id = auth.uid()));
--- inserts to tracking_events come only from the Edge Function (service_role bypasses RLS)
-alter table user_settings enable row level security;
-create policy settings_own on user_settings for all
-  using (user_id = auth.uid()) with check (user_id = auth.uid());
-alter table couriers enable row level security;
-create policy couriers_read on couriers for select using (auth.role() = 'authenticated');
-alter table parse_rules enable row level security;
-create policy rules_read on parse_rules for select using (auth.role() = 'authenticated');
--- parse_rules writes: service_role / dashboard only
+```
+fixture text / debug insert
+  → same RuleEngine
+  → same local repository
+  → same Flutter UI
 ```
 
-일별 뷰 쿼리: `parcels where user_id=me and (expected_arrival_date = :day or delivered_at::date = :day)`. 월별: 동일 조건 range + 날짜별 count 집계로 캘린더 배지 표시.
+설계 원칙:
 
-## 3. Collection Pipeline
+- 서버는 없다.
+- 알림은 배송 정보를 완성하는 원천이 아니라, **무엇을 더 읽어야 하는지 알려주는 트리거/힌트**다.
+- 배송 관련 알림이 올라오면 즉시 원본을 저장하고, 배송 후보인지 판정한다.
+- 알림 내용만으로 DB 생성이 가능한 경우만 즉시 저장한다.
+- 대부분의 채널은 알림 이후에 채널별 본문 획득 작업을 수행해야 한다.
+- 원본 캡처 텍스트는 로컬에만 저장한다.
+- 백그라운드 작업은 Android 로컬 작업으로 처리한다.
+- Windows에서는 Android 전용 기능을 fixture 또는 fake implementation으로 대체한다.
+- 인터페이스는 유지하되 구현체는 local-first로 둔다.
 
-All on-device until the final upsert:
+채널별 현실적인 접근 방식:
 
-1. **Capture.** `flutter_notification_listener` background callback receives `(packageName, title, text, bigText/extras)`. Filter by package allowlist derived from active `parse_rules` (`com.kakao.talk`, `com.coupang.mobile`, `com.samsung.android.messaging`, `com.google.android.apps.messaging`, courier apps). Every allowlisted notification is written to local `raw_captures` (drift) with timestamp + parse outcome — the replay corpus.
-2. **Extract.** `rule_engine.dart` runs rules ordered by priority: match `package_name` + `title_match`, then `body_regex` with named groups over `title + '\n' + (bigText ?? text)`. First match wins. Courier resolution: explicit `courier` group keyword → `couriers.name_ko` lookup; else rule's `courier_code`.
-3. **Validate.** Per-courier `invoice_regex` from `couriers`; CJ additionally gets the mod-7 check-digit test. A bare 10–14 digit number with no courier keyword in the same text is **rejected** (kills phone numbers/order numbers).
-4. **Dedupe.** Local: drift cache of `(courier_code, tracking_number)` seen in last 60 days → if seen, merge (add source channel, fill null product/mall). Remote backstop: upsert on `unique(user_id, courier_code, tracking_number)` with `on conflict` merging `source_channels` and coalescing null fields.
-5. **Upsert with offline queue.** Writes go through `parcel_upserter.dart`; failures (no network, Supabase paused) land in a drift `upload_queue` flushed by WorkManager.
+| 채널 | 알림 역할 | 본문 획득 방식 | 신뢰도 |
+|------|----------|----------------|--------|
+| 이메일 | 새 배송 메일 도착 감지, 보낸 사람/제목/시간 힌트 | Gmail API, IMAP, 또는 제공자 공식 API로 실제 메일 본문 읽기 | 높음 |
+| SMS/문자 | 배송 문자 도착 감지 | 기본 SMS 앱이 되거나 개인 sideload 빌드에서 직접 SMS 읽기 검토. 불가하면 알림 텍스트만 사용 | 중간 |
+| 카카오톡/텔레그램/WhatsApp | 배송 알림톡/봇 메시지 도착 감지 | 1차는 알림 텍스트. 부족하면 사용자가 해당 알림/대화를 열었을 때 Accessibility/화면 텍스트 캡처를 보조 옵션으로 검토 | 낮음~중간 |
+| 쇼핑몰/택배 앱 | 배송 상태 변경 감지 | 앱 deep link, 공식 API, 공유 기능, 접근성 기반 화면 텍스트 캡처 순으로 검토 | 앱별 상이 |
 
-**Gmail path:** WorkManager task every ~1h: `users.messages.list` with query `newer_than:7d {from:cjlogistics.com from:hanjin.co.kr from:epost.go.kr subject:(운송장 OR 배송)}` (query string itself stored as a `gmail` parse_rule → OTA-updatable), then `messages.get`, strip HTML, run the same rule engine.
+결론: 알림만으로는 완전한 배송 트래커를 만들 수 없다. 알림은 "지금 이 채널을 확인해야 한다"는 신호로 쓰고, 실제 배송 DB는 채널별 본문 획득 결과를 기준으로 만든다.
 
-**SMS direct-read path:** compile-time flag (`--dart-define=ENABLE_SMS_READ=true`) + settings toggle, default off. The notification listener already sees SMS-app notifications (Play-policy-safe default); direct READ_SMS is for the sideloaded personal build only.
+카카오톡 특정 채널(CJ대한통운 등)의 경우:
 
-**Rules distribution:** `rules_sync.dart` on app start fetches `parse_rules where rules_version > cachedVersion`, stores in drift `rule_cache`; the background isolate reads only the cache (never network). `assets/parse_rules_fallback.json` seeds first run.
+- Kakao Developers의 카카오톡 채널/메시지 API는 사용자의 카카오톡 앱 안에 있는 특정 채널 대화 내용을 읽는 API가 아니다.
+- 공식 API로 "내 휴대폰의 CJ대한통운 채널 대화 내역을 조회"하는 안정 경로는 현재 설계 기준에서 없음으로 본다.
+- Android 앱 샌드박스 때문에 일반 앱은 카카오톡 내부 DB를 직접 열어 읽을 수 없다.
+- 가능한 현실 경로는 NotificationListener + AccessibilityService 조합이다.
+- 이 방식은 사용자가 명시적으로 접근성 권한을 켜야 하며, 카카오톡 화면에 실제로 표시되는 텍스트를 읽고 필요하면 스크롤하며 수집한다.
+- 따라서 개인용/sideload 앱의 핵심 기능으로는 검토 가능하지만, Play Store 배포용 안정 기능이나 공식 연동으로 보기는 어렵다.
+- 이 프로젝트는 카카오톡 배송 채널 수집 가능성을 Wave 5의 Android PoC 게이트로 둔다. PoC에서 CJ대한통운 채널의 최근 배송 메시지를 접근성 기반으로 안정 추출하지 못하면 프로젝트 범위를 재검토한다.
+- Samsung Card channel PoC: Android `uiautomator dump`에서 카카오톡 알림톡 말풍선 본문이 `com.kakao.talk:id/alimtalk_title` TextView의 `text` 속성으로 노출됨을 확인했다. 주문번호, 상품명, 금액, 주문일, 상세 URL을 자동 추출할 수 있었다.
+- CJ대한통운 channel PoC: Android `uiautomator dump`에서 CJ대한통운 알림톡 본문도 동일한 `com.kakao.talk:id/alimtalk_title` TextView의 `text` 속성으로 노출됨을 확인했다. 운송장번호, 보내는곳, 배송사원 존재 여부, 배송완료 상태를 자동 추출했다. 이 결과 기준으로 프로젝트는 진행 가능하다.
 
-Example seed rules:
-- kakao / CJ 알림톡: title `.*CJ대한통운.*`, body `운송장\s*(번호)?[:\s]*(?<invoice>\d{10,12})` + optional `상품명[:\s]*(?<product>.+)`
-- SMS 한진: sender `^15880011`, body `(?<invoice>\d{10,14}).*(배송|출고)`
-- Coupang app: package `com.coupang.mobile`, body `(?<product>.+?)\s*(상품이|배송)` with per-rule `status_hint`
+## 3. Local Data Model
 
-## 4. Status Update Loop (pg_cron → Edge Function → Sweet Tracker)
+로컬 SQLite(drift)에 저장할 주요 데이터:
 
-```sql
-select cron.schedule('track-poll', '*/30 * * * *',
-  $$ select net.http_post(
-       url := 'https://<ref>.supabase.co/functions/v1/track-poll',
-       headers := jsonb_build_object('Authorization', 'Bearer ' || <service key from vault>)
-     ) $$);
-```
+| 테이블 | 역할 |
+|--------|------|
+| `parcels` | 배송 단위. 업체, 운송장번호, 상태, 상품명, 쇼핑몰, 예상 도착일, 완료일 |
+| `tracking_events` | 배송 상세 타임라인 |
+| `raw_captures` | 알림/메일/SNS 원본 캡처 및 파싱 결과 |
+| `notification_inbox` | Android 알림 리스너가 받은 모든 후보 알림의 원본/패키지/시간 |
+| `parse_rules` | 로컬 파싱 규칙 |
+| `monitor_accounts` | 모니터링할 이메일/SNS/외부 서비스 계정 메타데이터 |
+| `monitor_sources` | 어떤 앱/채널/패키지를 감시할지에 대한 설정 |
+| `app_settings` | 앱 모드, 필터 기본값, 권한 상태, UI 설정 |
 
-`track-poll/index.ts` (service_role client, batch ≤ 50/run):
+민감 정보 저장:
 
-1. Select pollable parcels — `status not in ('delivered','expired','invalid') and sweettracker_code is not null` — with **adaptive intervals**: `out_for_delivery` every run (30m), `in_transit`/`picked_up` if `last_polled_at < now()-'1h'`, `registered`/`preparing` if `< now()-'3h'`.
-2. For each: `GET /api/v1/trackingInfo?t_key=...&t_code=<code>&t_invoice=<num>`.
-3. Map Sweet Tracker `level` → status: 1→preparing, 2→picked_up, 3/4→in_transit, 5→out_for_delivery, 6→delivered. Insert `trackingDetails[]` into `tracking_events` (idempotent via unique constraint). Set `delivered_at` at level 6; `expected_arrival_date` = date of level-5 event, else heuristic `pickup_date + 2 days`.
-4. Stop conditions: delivered/expired/invalid never selected again (partial index). "invalid tracking number" → `poll_fail_count++`; after 5 → `invalid`. `registered_at < now() - 30 days` and not delivered → `expired`.
-5. State machine is **monotonic**: never move status backward.
+- 이메일/SNS/API 로그인 토큰, 비밀번호, API 키는 SQLite 일반 테이블에 저장하지 않는다.
+- `flutter_secure_storage` 또는 Android Keystore 기반 보안 저장소에 저장한다.
+- SQLite에는 보안 저장소 key alias, 계정 표시명, 활성화 여부 등 비민감 메타데이터만 둔다.
 
-Client freshness: Realtime subscription on `parcels` while foregrounded + pull-to-refresh; `flutter_local_notifications` fires on out_for_delivery/delivered transitions observed during WorkManager sync (no FCM needed).
+## 4. User And Accounts
 
-## 5. Coupang Special Case
+앱 자체 로그인:
 
-- Courier row: `('coupang_direct','쿠팡 로켓배송', NULL, '^cp:[0-9a-f]{40}$', true)` — poller skips entirely; status only from notifications.
-- **Identity:** Coupang notifications carry no tracking number → synthesize stable key `'cp:' + sha1(normalizedProductName + '|' + orderDateBucket)`; normalize product name (strip "외 2건" etc); ±2-day fuzzy match against existing open coupang parcels before creating a new one.
-- **Status keyword map** (stored as `parse_rules` rows with `status_hint`): `주문.*완료|결제` → registered; `상품.*준비|출고` → preparing; `배송.*시작|출발했` → out_for_delivery; `배송.*완료|문 앞` → delivered (sets `delivered_at` = capture time).
-- Monotonic guard applies; open coupang parcels auto-expire after 7 days without a delivered event.
+- 없음.
+- 앱 시작 시 바로 메인 화면으로 진입한다.
+- 멀티 유저 전환, 로그아웃, 서버 계정 삭제는 만들지 않는다.
 
-## 6. Flutter Screens
+User 메뉴:
 
-| Route | Screen | Notes |
-|---|---|---|
-| `/login` | 로그인 | Google 버튼 + 이메일/비밀번호. `signInWithIdToken` via `google_sign_in` (Gmail scope는 나중에 incremental 요청) |
-| `/onboarding` | 권한 온보딩 | ① 알림 접근 허용 (설정 딥링크 + 스크린샷 가이드) ② 배터리 최적화 제외 ③ (선택) Gmail 연동. 권한 회수 감지 시 재표시 |
-| `/` | 배송 목록 | 진행중/완료 탭. 카드: 상품명, 택배사, 상태 chip, 도착 예정 D-day. 수동 등록 FAB는 dev flavor만 |
-| `/parcel/:id` | 배송 상세 | tracking_events 타임라인 + 수집 채널 badge |
-| `/calendar` | 일별·월별 | table_calendar 월 그리드 + 날짜별 도착 건수 배지, 날짜 탭 시 해당일 목록 |
-| `/settings` | 설정 | 채널 토글, 권한 상태, Gmail 연동/해제, 로그아웃, 계정 삭제 |
-| `/debug/replay` | 알림 재생 | dev flavor 전용 (§10) |
+- 모니터링할 이메일 계정 추가/수정/삭제
+- SNS 또는 쇼핑몰 계정 추가/수정/삭제
+- 모니터링할 앱 패키지 선택: Gmail, 카카오톡, 텔레그램, WhatsApp, SMS 앱, 쇼핑몰 앱 등
+- 각 계정의 로그인 입력란 또는 연결 상태 표시
+- 계정별 모니터링 on/off
+- 채널별 접근 방식 표시: 알림만 사용, 공식 API 사용, IMAP 사용, 직접 읽기 사용 안 함
+- 마지막 동기화 시간, 실패 상태, 재시도 버튼
+- 저장된 인증 정보 초기화
 
-Navigation: `go_router` + auth redirect. State: `flutter_riverpod`.
+User 메뉴의 "로그인"은 외부 서비스를 읽기 위한 로그인이지, 앱 사용자를 인증하기 위한 로그인은 아니다.
+다만 SNS 로그인 정보가 있다고 해서 앱이 모든 SNS 대화 내용을 직접 읽을 수 있는 것은 아니다. 메신저류는 기본적으로 알림에 노출된 배송 관련 텍스트를 수집하고, 공식 API가 있는 채널만 별도 어댑터로 확장한다.
 
-## 7. Key Packages
+## 5. UI Layout
 
-| Package | Why |
-|---|---|
-| `supabase_flutter` | Auth + Postgrest + Realtime |
-| `flutter_notification_listener` | 알림 캡처; `notification_capture_service.dart` 뒤에 격리해 교체 가능하게 (fallback: `notification_listener_service`) |
-| `google_sign_in` + `googleapis` + `extension_google_sign_in_as_googleapis_auth` | 로그인 + Gmail API |
-| `flutter_riverpod`, `go_router` | 상태/라우팅 |
-| `drift` | raw_captures / rule_cache / upload_queue |
-| `table_calendar` | 월 캘린더 + ko locale |
-| `workmanager` | Gmail 폴링, 큐 flush, 권한 헬스체크 |
-| `flutter_secure_storage` | Gmail 토큰 |
-| `flutter_local_notifications` | 배송출발/배달완료 알림 |
-| `intl`, `freezed`, `json_serializable` | 포맷/모델 |
-| (flag) `another_telephony` | 직접 SMS 읽기 (사이드로드 빌드 전용) |
+기본 정보 구조는 왼쪽 메뉴 + 오른쪽 메인 윈도우다.
 
-## 8. Wave Breakdown (PC-first, 검증 기준 포함)
+### Left Menu
 
-- **Wave 1 — PC 모드 골격** *(환경: PC)*: Flutter 프로젝트(Windows+Android 타깃), `AuthRepository`(로컬 프로필 가짜 인증) + `ParcelRepository`(로컬 drift 구현), 배송 목록 UI(진행중/완료 탭), 디버그 삽입 화면. *검증*: Windows 데스크톱에서 실행, 가짜 배송 삽입 → 목록 표시, `flutter analyze`/`flutter test` 통과.
-- **Wave 2 — 파싱 엔진 + fixture 코퍼스** *(PC)*: `test/fixtures/captures/`에 알림톡/SMS/배송메일 샘플, rule_engine + tracking_number_validator + 번들 규칙 JSON, 중복제거(`parcel_upserter` 로컬 버전), `/debug/replay` 주입 화면. *검증*: fixture 코퍼스 단위 테스트 그린, 주입한 텍스트가 자동으로 목록에 등록, 2채널 → 1행 병합.
-- **Wave 3 — 상태 머신 + 캘린더** *(PC)*: parcel_status 상태 머신(단조 증가), 상세 타임라인 화면, table_calendar 일별/월별 뷰 + 배지, expected_arrival 휴리스틱, 쿠팡 상태 매퍼(합성 키) — 전부 fixture 데이터로. *검증*: 시뮬레이션 시퀀스 registered→delivered, 캘린더 날짜 셀 정확성.
-- **Wave 4 — Supabase 실연결** *(PC→서버)*: Supabase 프로젝트 + 0001~0003 마이그레이션(RLS), `ParcelRepository` Supabase 구현 교체 + 오프라인 큐, 이메일 로그인 → Google 로그인, parse_rules OTA 동기화, track-poll Edge Function + pg_cron + 스마트택배 API. *검증*: 두 계정 RLS 교차 확인, 실운송장 상태 자동 갱신, 배달완료 후 폴링 중단.
-- **Wave 5 — Android 실기기** *(폰)*: 알림 리스너 `CaptureSource` 구현 + foreground service, 권한 온보딩, Gmail API(WorkManager), 실제 알림톡/SMS/메일로 파싱 검증 → 실캡처를 fixture 코퍼스에 추가. *검증*: 실제 알림 자동 등록, Gmail 배송 메일 파싱.
-- **Wave 6 — Hardening** *(폰)*: 배터리 최적화 가이드, 리스너 감시(24h 무캡처 → 리바인드+경고 배너), 만료 정리 cron, 주간 heartbeat cron, 로컬 알림(배송출발/배달완료), 릴리즈 빌드. *검증*: 삼성 기기 48h 소크 테스트.
+상단 주요 메뉴:
 
-## 9. Risks & Mitigations
+- **업체별**
+- **일별**
+- **월별**
 
-| Risk | Mitigation |
-|---|---|
-| OEM(삼성)이 리스너 종료 | Foreground service + 배터리 최적화 제외 요청 + 삼성 절전 가이드 화면 + WorkManager 감시(24h 무캡처 시 리바인드/경고). 일단 운송장이 잡히면 상태는 서버 폴러가 책임 → 기기 의존 최소화 |
-| 알림톡 텍스트 잘림 | `bigText`/`textLines` extras 파싱; 운송장번호 앵커 우선; 상품명은 optional (Sweet Tracker `itemName`이 첫 폴링에서 보강) |
-| 운송장 오탐 | 택배사 키워드 동시 출현 필수 + 길이 regex + CJ check digit + 서버 검증(invalid 5회 → 숨김) |
-| Supabase 7일 정지 | 30분 cron 자체가 활동 + 주간 heartbeat cron + 오프라인 큐로 데이터 유실 방지 |
-| Sweet Tracker 한도/장애 | 배치 ≤50 + 적응 폴링 간격 + 5xx 시 백오프 |
-| Play SMS 정책 | 직접 SMS 읽기는 컴파일 플래그, 기본 off |
-| Gmail 토큰 만료 | WorkManager에서 silent 재인증; 실패 시 `gmail_connected=false` + 재연동 안내 |
-| 알림톡 템플릿 변경 | OTA parse_rules + 미파싱 캡처 flag → 실제 텍스트 보고 규칙 추가 후 대시보드 배포 |
+하단 보조 메뉴:
 
-## 10. Verification Plan
+- **Filter**
+- **Setting**
+- **User**
 
-- **재생 디버그 화면** (`/debug/replay`): raw_captures 목록(파싱 결과/거부 사유), "다시 파싱"(규칙 갱신 후 재실행), "가짜 알림 주입"(텍스트 붙여넣기로 시뮬레이션), 코퍼스 JSON export.
-- **Unit tests** (`app/test/parser/`): 실제 캡처 export 기반 fixture 코퍼스로 규칙 엔진+검증기 회귀 테스트. check digit / 오탐 거부 케이스 포함.
-- **Edge Function 로컬 테스트**: `supabase functions serve track-poll` + curl, 실운송장, 2회 실행 시 이벤트 중복 없음(멱등성).
-- **실기기 게이트**: Wave 3+는 카카오톡 로그인된 실기기 필요. 실제 소액 주문 1건/택배사로 진짜 알림톡 템플릿을 코퍼스에 수집.
-- **RLS 테스트**: 테스트 계정 2개 교차 조회 → 빈 결과 확인.
-- **소크 테스트** (Wave 6): 삼성 기기 기본 배터리 설정으로 48h; 캡처 누락 0 또는 경고 배너 표시.
+### Main Window
+
+오른쪽 메인 영역은 선택한 메뉴에 따라 바뀐다.
+
+업체별:
+
+- 메뉴 선택 시 스크롤 가능한 팝업/패널을 띄운다.
+- 업체 목록에서 하나 또는 여러 업체를 선택할 수 있다.
+- 선택 결과에 따라 오른쪽 메인 영역에 배송 목록을 표시한다.
+
+일별:
+
+- 날짜 선택 또는 오늘 기준 배송 현황을 표시한다.
+- 해당 날짜 예상 도착, 배송출발, 배달완료 항목을 구분한다.
+
+월별:
+
+- 월 캘린더를 표시한다.
+- 날짜별 배송 건수 배지 또는 상태 표시를 제공한다.
+- 날짜 선택 시 해당 날짜의 배송 목록을 보여준다.
+
+Filter:
+
+- 업체 선택
+- 날짜 기간 선택
+- 배송 상태 선택
+- 출처 채널 선택
+- 적용/초기화
+
+Setting:
+
+- 모드 선택
+- 알림/백그라운드/표시 관련 설정
+- 세부 항목은 추후 결정한다.
+
+User:
+
+- 이메일, SNS, 쇼핑몰 등 모니터링 계정 설정
+- 로그인 입력/연동/해제
+- 암호화 저장 상태 표시
+
+Android 화면에서는 같은 정보 구조를 드로어, 내비게이션 레일, 바텀 내비게이션 중 적절한 형태로 재배치한다.
+
+## 6. Capture And Parsing
+
+### Trigger-first pipeline
+
+모든 입력은 먼저 Android 알림으로 감지하지만, 알림 텍스트만을 최종 데이터로 보지 않는다.
+
+1. 알림 리스너가 새 알림을 받는다.
+2. 패키지명, 앱 이름, 제목, 본문, bigText/textLines, 알림 시간, deep link 후보를 저장한다.
+3. `monitor_sources`에 등록된 앱인지 확인한다.
+4. 배송 키워드와 negative keyword를 기준으로 배송 후보를 빠르게 분류한다.
+5. 배송 후보면 `raw_captures`에 저장한다.
+6. 알림만으로 `courier_code + tracking_number` 또는 `direct_delivery_key`가 충분히 확정되는지 판단한다.
+7. 충분하면 규칙 엔진 결과로 `parcel`을 생성/병합한다.
+8. 부족하면 채널별 본문 획득 작업을 예약하고, 알림은 pending capture로 남긴다.
+9. 본문 획득이 완료되면 규칙 엔진을 다시 실행해 배송 DB를 만든다.
+
+### Content acquisition tiers
+
+본문 획득은 아래 우선순위로 시도한다.
+
+1. **공식 API**: Gmail API, 쇼핑몰/택배사 API, Telegram Bot API처럼 문서화된 접근 경로.
+2. **표준 프로토콜**: IMAP 등 사용자가 명시적으로 입력한 계정으로 접근 가능한 방식.
+3. **사용자 주도 공유/내보내기**: 메일/메신저/쇼핑몰 앱에서 공유하기로 CheckShipping에 전달.
+4. **접근성 기반 보조 캡처**: 사용자가 직접 알림이나 대화를 열면 현재 화면의 텍스트를 읽어 배송 정보를 추출.
+5. **알림만 사용**: 위 방법이 없거나 실패한 경우. 이때는 불완전 후보로 저장하고 사용자 확인을 요구한다.
+
+접근성 기반 보조 캡처는 강력하지만 민감하고 앱별 UI 변화에 약하다. Play 배포용 기본 기능이 아니라 개인용/명시적 동의 기반 보조 옵션으로 둔다.
+
+### Channel content fetchers
+
+이메일:
+
+- Gmail 알림이 배송 후보로 감지되면 User 메뉴에 등록된 Gmail 계정으로 Gmail API를 조회한다.
+- Gmail API를 쓸 수 없는 계정은 IMAP/app password 방식을 검토한다.
+- 알림의 보낸 사람, 제목, 시간대와 메일 검색 결과를 매칭해 실제 메일 본문을 읽는다.
+- 메일 본문에서 운송장번호, 업체, 상품명, 쇼핑몰을 재추출한다.
+
+SMS/문자:
+
+- 알림만으로 충분하지 않은 경우가 많으므로 직접 SMS 읽기 전략을 별도로 둔다.
+- Play 배포를 염두에 두면 SMS 권한은 제약이 크다.
+- 개인용 sideload 빌드에서는 기본 SMS 앱 전환 또는 직접 SMS 읽기 플래그를 검토할 수 있다.
+- 직접 읽기가 불가능하면 알림 텍스트 + 사용자 확인으로 처리한다.
+
+SNS/메신저:
+
+- 카카오톡, 텔레그램, WhatsApp 등은 알림을 트리거로 사용한다.
+- 일반 앱 권한으로 각 앱의 내부 메시지 DB를 직접 열어 읽는 설계는 채택하지 않는다.
+- 공식 API가 있는 채널은 전용 fetcher를 만든다.
+- 공식 API가 없고 알림만으로 부족하면, 사용자가 대화를 열었을 때 접근성 기반 화면 텍스트 캡처를 보조 옵션으로 검토한다.
+- User 메뉴의 SNS 항목은 감시할 앱 선택, 알림 권한 상태, 계정 표시명, 공식 연동/접근성 보조 캡처 사용 여부를 관리한다.
+- 카카오톡 특정 채널은 공식 읽기 API가 없으므로 `KakaoAccessibilityFetcher` PoC를 먼저 만든다. 대상 채널명, 메시지 시간, 말풍선 텍스트, 운송장 후보를 화면 노드에서 읽을 수 있는지 실기기에서 검증한다.
+- 1차 구현은 `com.kakao.talk:id/alimtalk_title` 텍스트 노드를 우선 읽는다. 삼성카드와 CJ대한통운 알림톡 모두 이 노드에서 본문 추출을 확인했다. 다른 말풍선 타입은 `message`, `content-desc`, visible text를 fallback으로 수집한다.
+
+쇼핑몰/택배 앱:
+
+- 앱 알림에서 배송 상태와 상품명을 추출한다.
+- 알림에 deep link가 있으면 저장한다.
+- 공식 API나 안정적인 공유/내보내기 경로가 있으면 그 경로를 우선한다.
+- 사용자가 앱 화면을 열었을 때 접근성 기반 화면 텍스트 캡처로 배송 상세를 보강하는 옵션을 검토한다.
+- 자동으로 다른 앱 UI를 조작해 스크래핑하는 방식은 fragile path로 분류하고 기본 경로로 의존하지 않는다.
+
+### User-managed monitoring sources
+
+User 메뉴에서 관리할 항목:
+
+- 모니터링할 이메일 계정
+- 이메일 접근 방식: Gmail API, IMAP, 사용 안 함
+- 모니터링할 SNS/메신저 앱
+- 모니터링할 SMS 앱
+- 모니터링할 쇼핑몰/택배 앱
+- 채널별 본문 획득 방식: 공식 API, IMAP, 공유, 접근성 보조 캡처, 알림만
+- 계정별 인증 정보 입력 및 삭제
+- 보안 저장소 저장 상태
+- 마지막 알림 감지 시간
+- 마지막 보강 작업 결과
+
+오탐 방지:
+
+- 운송장번호처럼 보이는 숫자만으로 배송을 생성하지 않는다.
+- 택배사/배송 키워드와 함께 등장할 때만 후보로 인정한다.
+- 은행 OTP, 광고, 주문번호는 negative fixture로 유지한다.
+
+## 7. Tracking Refresh
+
+Supabase cron 대신 로컬 백그라운드 작업을 사용한다.
+
+후보:
+
+- `workmanager`
+- Android 네이티브 WorkManager bridge
+- 앱 foreground 상태에서 수동 새로고침
+
+정책:
+
+- 배송 완료/만료/번호오류는 조회하지 않는다.
+- 배송중/배송출발은 더 자주 확인한다.
+- 등록됨/상품준비는 더 느리게 확인한다.
+- 네트워크 실패 시 다음 주기에 재시도한다.
+- API 키는 User 또는 Setting 영역에서 입력하고 보안 저장소에 암호화 저장한다.
+
+## 8. Development Flow
+
+1. Windows에서 UI와 로컬 DB, parser fixture를 먼저 검증한다.
+2. `flutter analyze`와 `flutter test`를 통과시킨다.
+3. Windows fixture로 업체별/일별/월별/필터/User 화면을 검증한다.
+4. Android 실기기에서 알림 리스너와 보안 저장소를 연결한다.
+5. 실제 알림을 먼저 수집하고, 알림만으로 부족한 이메일은 Gmail API/IMAP 보강을 연결한다.
+6. 카카오톡/SMS/쇼핑몰/택배 앱 알림 샘플을 fixture에 추가한다.
+7. SNS는 알림 기반 수집을 기본으로 검증하고, 공식 API가 있는 경우에만 보강한다.
+8. 릴리즈 APK를 만든다.
+
+## 9. Wave Roadmap
+
+| Wave | 내용 | 환경 |
+|------|------|------|
+| 0 | 프로젝트 초기화 | 완료 |
+| 1 | Windows+Android Flutter 골격, 로컬 저장소, 목록 UI | 완료 |
+| 2 | 파싱 엔진, fixture 코퍼스, 주입 디버그 화면 | 완료 |
+| 3 | 상세 타임라인, 일별/월별 캘린더, 도착일 휴리스틱 | 완료 |
+| 4 | Supabase 제거, 로그인 제거, 단일 사용자 로컬 모드, 좌측 메뉴 UI 재설계 | Windows |
+| 5 | Android 알림 리스너, User 계정 모니터링, 보안 저장소 | Android |
+| 6 | 백그라운드 조회, 안정화, 배터리 최적화, 릴리즈 APK | Android |
+
+## 10. Verification Gates
+
+Windows gate:
+
+- `flutter analyze` 통과
+- `flutter test` 통과
+- fixture 삽입 후 업체별/일별/월별 화면 표시
+- 필터 조건 적용/초기화 확인
+- User 화면에서 계정 메타데이터 저장 동작 확인
+
+Android gate:
+
+- 알림 리스너 권한 안내 및 상태 표시
+- 실제 알림 캡처
+- 배송 관련 알림 후보 분류
+- 알림 원본의 로컬 저장
+- 이메일 알림 감지 후 공식 API/IMAP 보강
+- 카카오톡 CJ대한통운 채널 접근성 PoC: 채널 화면 진입, 최근 메시지 텍스트 추출, 운송장/상품/상태 파싱
+- SNS/메신저는 공식 API 또는 접근성 PoC가 성공한 채널만 자동 수집 대상으로 승격
+- 보안 저장소 저장/삭제 확인
+- 백그라운드 작업 재시작 확인
+- 릴리즈 APK 설치 확인
+
+## 11. Removed Scope
+
+다음은 현재 범위에서 제거한다.
+
+- Supabase Auth
+- Supabase Postgres
+- RLS 정책
+- Edge Function
+- pg_cron/pg_net
+- 서버 Realtime
+- 서버 계정 기반 멀티 유저
+- iOS 구현

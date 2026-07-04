@@ -63,6 +63,25 @@ Parcel merge(Parcel other) => copyWith(
 );
 ```
 
+## Windows 카카오톡 채팅방 복사 fallback
+
+**사용 시점:** Windows 테스트에서 카카오톡 알림톡 fixture를 확보해야 할 때
+
+Windows 카카오톡은 말풍선 텍스트가 UI Automation/Win32 텍스트 트리에 노출되지 않았다. 다만 채팅 영역을 포커스한 뒤 `Ctrl+A` / `Ctrl+C`를 보내면 현재 채팅방 대화가 평문으로 복사되는 것을 확인했다. 이 경로는 Windows fixture 수집용 fallback으로만 사용하고, Android 구현 경로로 간주하지 않는다.
+
+## Android 카카오톡 알림톡 접근성 노드
+
+**사용 시점:** 카카오톡 알림톡 채널에서 배송/주문 본문을 추출할 때
+
+삼성카드와 CJ대한통운 채널 실기기 PoC에서 알림톡 본문이 `com.kakao.talk:id/alimtalk_title` TextView의 `text` 속성에 노출됐다. 1차 수집은 이 resource-id를 우선 탐색하고, 다른 말풍선 타입은 `message`, `content-desc`, visible text 순서로 fallback 처리한다.
+
+```text
+primaryResourceId = "com.kakao.talk:id/alimtalk_title"
+fallbackResourceIds = [
+  "com.kakao.talk:id/message",
+]
+```
+
 <!-- 예시 형식:
 
 ## [패턴 이름]

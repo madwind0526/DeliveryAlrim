@@ -3,7 +3,7 @@
 ## Current Wave
 
 - **Wave:** 4
-- **Status:** Ready (Supabase 실연결 — 사용자 콘솔 작업 필요)
+- **Status:** Ready (로컬 단일 사용자 전환 — Supabase/Auth 제거 및 UI 재설계)
 - **Cache Status:** CLEAN
 - **Last Checkpoint:** 2026-07-05 Wave 3 완료 커밋
 
@@ -15,9 +15,17 @@
 | 1 | PC 모드 골격 (Flutter Win+Android, 로컬 인증/저장소, 목록 UI) | Done |
 | 2 | 파싱 엔진 + fixture 코퍼스 15건 + 주입 디버그 화면 | Done |
 | 3 | 상세 타임라인 + 일별/월별 캘린더 + 도착일 휴리스틱 + 하단 내비 | Done |
-| 4 | Supabase 실연결 (RLS, 이메일→Google 로그인, track-poll) | Ready |
+| 4 | Supabase 제거 + 로그인 제거 + 로컬 단일 사용자 모드 + 좌측 메뉴 UI | Ready |
+| 5 | Android 실기기: 알림 리스너 + 카카오톡 채널 접근성 PoC + 이메일/SNS 모니터링 + 암호화 저장 | Planned |
+| 6 | 하드닝: 백그라운드 조회, 배터리 최적화, 로컬 알림, 릴리즈 APK | Planned |
 
 ## Session Notes
 
-- Wave 3 검증: 21 테스트 통과, analyze 무결점, Windows 빌드 성공
-- Wave 4 시작 전 사용자 콘솔 작업 필요: ① Supabase 프로젝트 생성 ② 스마트택배 API 키 ③ (Google 로그인 단계에서) GCP OAuth
+- 사용자가 Supabase 사용 계획을 철회함.
+- 앱 자체 로그인과 멀티 유저 지원은 제거한다.
+- 모든 자료는 로컬 저장소에 보관한다.
+- User 메뉴는 외부 모니터링 계정 설정용이며, 필요한 로그인 정보는 암호화 저장한다.
+- 모든 입력은 알림 리스너를 trigger + hint로 사용하고, 실제 배송 DB는 채널별 본문 획득 결과를 기준으로 만든다.
+- 카카오톡 특정 채널 읽기는 공식 API가 아니라 접근성 기반으로 진행한다. 삼성카드/CJ대한통운 알림톡 본문 추출 PoC 성공.
+- 2026-07-05 알림/접근성 PoC 발견사항을 knowledge로 flush 완료.
+- Windows에서 먼저 검증하고 Android로 확장한다.
