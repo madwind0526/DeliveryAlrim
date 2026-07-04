@@ -15,11 +15,11 @@ enum CaptureChannel {
       values.firstWhere((c) => c.code == code);
 
   String get labelKo => switch (this) {
-        kakao => '카카오 알림톡',
-        sms => 'SMS',
-        mallApp => '쇼핑몰 앱',
-        gmail => '이메일',
-      };
+    kakao => '카카오 알림톡',
+    sms => 'SMS',
+    mallApp => '쇼핑몰 앱',
+    gmail => '이메일',
+  };
 }
 
 /// One raw notification/SMS/email as captured, before parsing.

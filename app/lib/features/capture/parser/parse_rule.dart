@@ -1,7 +1,7 @@
 import 'dart:convert';
 
-/// One extraction rule. Mirrors the future Supabase `parse_rules` table;
-/// bundled as assets/parse_rules_fallback.json until OTA sync lands (Wave 4).
+/// One extraction rule. The app starts from bundled JSON, then can load local
+/// rule rows with the same shape.
 class ParseRule {
   final String id;
   final Set<String> sourceTypes;
@@ -40,8 +40,7 @@ class ParseRule {
         pattern == null ? null : RegExp(pattern, multiLine: multiLine);
     return ParseRule(
       id: json['id'] as String,
-      sourceTypes:
-          (json['sourceTypes'] as List).cast<String>().toSet(),
+      sourceTypes: (json['sourceTypes'] as List).cast<String>().toSet(),
       packageName: json['packageName'] as String?,
       senderMatch: re(json['senderMatch'] as String?),
       titleMatch: re(json['titleMatch'] as String?),
@@ -59,7 +58,7 @@ class RuleSet {
   final List<ParseRule> rules;
 
   RuleSet({required this.rulesVersion, required List<ParseRule> rules})
-      : rules = [...rules]..sort((a, b) => a.priority.compareTo(b.priority));
+    : rules = [...rules]..sort((a, b) => a.priority.compareTo(b.priority));
 
   factory RuleSet.fromJsonString(String jsonString) {
     final map = jsonDecode(jsonString) as Map<String, dynamic>;

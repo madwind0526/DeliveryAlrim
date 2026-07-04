@@ -46,5 +46,22 @@
       "productName": "콜롬비아 커피 원두 1kg",
       "mallName": "커피창고"
     }
+  },
+  {
+    "id": "kakao_cj_delivered_alimtalk_real_shape",
+    "note": "Real-shape redacted: CJ대한통운 알림톡 delivered notice from Android accessibility node",
+    "channel": "kakao",
+    "packageName": "com.kakao.talk",
+    "title": "CJ대한통운",
+    "body": "[CJ대한통운 매일오네]\n홍길동님 안녕하세요\n\n고객님께서 주문하신\n상품을 문앞 에\n배송완료 하였습니다\n\nCJ대한통운 매일오네를 이용해\n주셔서 감사합니다.\n\n- 보내는곳: 삼성전자\n- 운송장번호: 594239221744\n- 배송사원: 01000000000\n\n일요일에도 신속하게!!\n모두를 위한 매일매일 배송\nCJ대한통운 매일오네(O-NE)",
+    "capturedAt": "2026-07-05T14:20:00",
+    "expected": {
+      "matched": true,
+      "courierCode": "cj",
+      "trackingNumber": "594239221744",
+      "status": "delivered",
+      "mallName": "삼성전자",
+      "arrivalOffsetDays": 0
+    }
   }
 ]

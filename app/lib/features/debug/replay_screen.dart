@@ -65,16 +65,18 @@ class _ReplayScreenState extends ConsumerState<ReplayScreen> {
     final result = _lastResult;
     if (capture == null || result == null || !result.matched) return;
 
-    await ref.read(parcelRepositoryProvider).upsert(
+    await ref
+        .read(parcelRepositoryProvider)
+        .upsert(
           result.parcel!.toParcel(capture),
           eventNote: '알림 주입 (${capture.channel.labelKo})',
         );
 
     if (!mounted) return;
     setState(() => _registered = true);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text(StringsKo.registeredSnack)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text(StringsKo.registeredSnack)));
   }
 
   @override
@@ -202,14 +204,20 @@ class _ResultCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                const Icon(Icons.check_circle_outline,
-                    color: Color(0xFF4ADE80)),
+                const Icon(
+                  Icons.check_circle_outline,
+                  color: Color(0xFF4ADE80),
+                ),
                 const SizedBox(width: 8),
-                Text(StringsKo.parseMatched,
-                    style: Theme.of(context).textTheme.titleMedium),
+                Text(
+                  StringsKo.parseMatched,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
                 const Spacer(),
-                Text('${StringsKo.matchedRuleLabel}: ${p.matchedRuleId}',
-                    style: Theme.of(context).textTheme.bodySmall),
+                Text(
+                  '${StringsKo.matchedRuleLabel}: ${p.matchedRuleId}',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
               ],
             ),
             const Divider(),

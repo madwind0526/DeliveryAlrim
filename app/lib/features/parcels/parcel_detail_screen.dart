@@ -10,13 +10,14 @@ import '../capture/capture_models.dart';
 import 'models/parcel.dart';
 import 'models/tracking_event.dart';
 
-final _parcelByIdProvider =
-    StreamProvider.family<Parcel?, String>((ref, id) {
+final _parcelByIdProvider = StreamProvider.family<Parcel?, String>((ref, id) {
   return ref.watch(parcelRepositoryProvider).watchById(id);
 });
 
-final _eventsProvider =
-    StreamProvider.family<List<TrackingEvent>, String>((ref, id) {
+final _eventsProvider = StreamProvider.family<List<TrackingEvent>, String>((
+  ref,
+  id,
+) {
   return ref.watch(parcelRepositoryProvider).watchEvents(id);
 });
 
@@ -76,12 +77,13 @@ class ParcelDetailScreen extends ConsumerWidget {
             children: [
               _Header(parcel: parcel),
               const SizedBox(height: 16),
-              Text(StringsKo.timelineTitle,
-                  style: Theme.of(context).textTheme.titleMedium),
+              Text(
+                StringsKo.timelineTitle,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
               const SizedBox(height: 8),
               eventsAsync.when(
-                loading: () =>
-                    const Center(child: CircularProgressIndicator()),
+                loading: () => const Center(child: CircularProgressIndicator()),
                 error: (e, _) => Text('$e'),
                 data: (events) => events.isEmpty
                     ? const Text(StringsKo.noEvents)
@@ -130,9 +132,10 @@ class _Header extends StatelessWidget {
                   ),
                 ),
                 Chip(
-                  label: Text(parcel.status.labelKo,
-                      style:
-                          const TextStyle(fontSize: 12, color: Colors.white)),
+                  label: Text(
+                    parcel.status.labelKo,
+                    style: const TextStyle(fontSize: 12, color: Colors.white),
+                  ),
                   backgroundColor: parcel.status.color,
                   visualDensity: VisualDensity.compact,
                   side: BorderSide.none,
@@ -142,15 +145,19 @@ class _Header extends StatelessWidget {
             const Divider(),
             Text('${StringsKo.courierLabel}: $courierName'),
             if (!parcel.trackingNumber.startsWith('cp:'))
-              Text('${StringsKo.trackingNumberLabel}: ${parcel.trackingNumber}'),
+              Text(
+                '${StringsKo.trackingNumberLabel}: ${parcel.trackingNumber}',
+              ),
             if (parcel.mallName != null)
               Text('${StringsKo.mallNameLabel}: ${parcel.mallName}'),
             if (parcel.expectedArrivalDate != null)
               Text(
-                  '${StringsKo.expectedBadge}: ${dateFmt.format(parcel.expectedArrivalDate!)}'),
+                '${StringsKo.expectedBadge}: ${dateFmt.format(parcel.expectedArrivalDate!)}',
+              ),
             if (parcel.deliveredAt != null)
               Text(
-                  '${StringsKo.deliveredBadge}: ${dateFmt.format(parcel.deliveredAt!)}'),
+                '${StringsKo.deliveredBadge}: ${dateFmt.format(parcel.deliveredAt!)}',
+              ),
             const SizedBox(height: 8),
             Wrap(
               spacing: 6,
@@ -159,9 +166,9 @@ class _Header extends StatelessWidget {
                   Chip(
                     label: Text(
                       CaptureChannel.values
-                          .where((c) => c.code == channel)
-                          .map((c) => c.labelKo)
-                          .firstOrNull ??
+                              .where((c) => c.code == channel)
+                              .map((c) => c.labelKo)
+                              .firstOrNull ??
                           channel,
                       style: const TextStyle(fontSize: 11),
                     ),
@@ -201,14 +208,16 @@ class _TimelineTile extends StatelessWidget {
             child: Column(
               children: [
                 Container(
-                    width: 2,
-                    height: 8,
-                    color: isFirst ? Colors.transparent : lineColor),
+                  width: 2,
+                  height: 8,
+                  color: isFirst ? Colors.transparent : lineColor,
+                ),
                 Icon(Icons.circle, size: 12, color: event.status.color),
                 Expanded(
                   child: Container(
-                      width: 2,
-                      color: isLast ? Colors.transparent : lineColor),
+                    width: 2,
+                    color: isLast ? Colors.transparent : lineColor,
+                  ),
                 ),
               ],
             ),
@@ -220,18 +229,22 @@ class _TimelineTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(event.status.labelKo,
-                      style: Theme.of(context)
-                          .textTheme
-                          .bodyLarge
-                          ?.copyWith(fontWeight: FontWeight.w600)),
-                  Text(timeFmt.format(event.eventTime),
-                      style: Theme.of(context).textTheme.bodySmall),
+                  Text(
+                    event.status.labelKo,
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Text(
+                    timeFmt.format(event.eventTime),
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
                   if (event.location != null || event.description != null)
                     Text(
-                      [event.location, event.description]
-                          .whereType<String>()
-                          .join(' · '),
+                      [
+                        event.location,
+                        event.description,
+                      ].whereType<String>().join(' · '),
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                 ],

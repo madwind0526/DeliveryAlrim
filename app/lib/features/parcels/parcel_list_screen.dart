@@ -9,28 +9,70 @@ import '../../core/providers.dart';
 import '../../core/strings_ko.dart';
 import 'models/parcel.dart';
 
-class ParcelListScreen extends ConsumerWidget {
+class ParcelListScreen extends ConsumerStatefulWidget {
   const ParcelListScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ParcelListScreen> createState() => _ParcelListScreenState();
+}
+
+class _ParcelListScreenState extends ConsumerState<ParcelListScreen> {
+  String? _selectedCourier;
+
+  Future<void> _showCompanyPicker(BuildContext context) async {
+    final selected = await showDialog<String?>(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: const Text(StringsKo.companyPickerTitle),
+        children: [
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(StringsKo.allCouriers),
+          ),
+          SizedBox(
+            width: 320,
+            height: 360,
+            child: ListView(
+              shrinkWrap: true,
+              children: [
+                for (final courier in Couriers.all)
+                  SimpleDialogOption(
+                    onPressed: () => Navigator.pop(context, courier.code),
+                    child: Text(courier.nameKo),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+    setState(() => _selectedCourier = selected);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final title = _selectedCourier == null
+        ? StringsKo.parcelListTitle
+        : Couriers.byCode(_selectedCourier!)?.nameKo ??
+              StringsKo.parcelListTitle;
+
     return DefaultTabController(
       length: 2,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text(StringsKo.parcelListTitle),
+          title: Text(title),
           actions: [
+            IconButton(
+              tooltip: StringsKo.companyPickerTitle,
+              icon: const Icon(Icons.storefront_outlined),
+              onPressed: () => _showCompanyPicker(context),
+            ),
             if (kDebugMode)
               IconButton(
                 tooltip: StringsKo.replayTitle,
                 icon: const Icon(Icons.science_outlined),
                 onPressed: () => context.push('/debug/replay'),
               ),
-            IconButton(
-              tooltip: StringsKo.logout,
-              icon: const Icon(Icons.logout),
-              onPressed: () => ref.read(authRepositoryProvider).signOut(),
-            ),
           ],
           bottom: const TabBar(
             tabs: [
@@ -44,10 +86,12 @@ class ParcelListScreen extends ConsumerWidget {
             _ParcelTab(
               provider: activeParcelsProvider,
               emptyText: StringsKo.emptyActive,
+              courierFilter: _selectedCourier,
             ),
             _ParcelTab(
               provider: doneParcelsProvider,
               emptyText: StringsKo.emptyDone,
+              courierFilter: _selectedCourier,
             ),
           ],
         ),
@@ -67,8 +111,13 @@ class ParcelListScreen extends ConsumerWidget {
 class _ParcelTab extends ConsumerWidget {
   final StreamProvider<List<Parcel>> provider;
   final String emptyText;
+  final String? courierFilter;
 
-  const _ParcelTab({required this.provider, required this.emptyText});
+  const _ParcelTab({
+    required this.provider,
+    required this.emptyText,
+    required this.courierFilter,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -77,7 +126,10 @@ class _ParcelTab extends ConsumerWidget {
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Center(child: Text('$e')),
       data: (list) {
-        if (list.isEmpty) {
+        final visible = courierFilter == null
+            ? list
+            : list.where((p) => p.courierCode == courierFilter).toList();
+        if (visible.isEmpty) {
           return Center(
             child: Text(
               emptyText,
@@ -87,8 +139,8 @@ class _ParcelTab extends ConsumerWidget {
         }
         return ListView.builder(
           padding: const EdgeInsets.symmetric(vertical: 8),
-          itemCount: list.length,
-          itemBuilder: (context, i) => _ParcelCard(parcel: list[i]),
+          itemCount: visible.length,
+          itemBuilder: (context, i) => _ParcelCard(parcel: visible[i]),
         );
       },
     );

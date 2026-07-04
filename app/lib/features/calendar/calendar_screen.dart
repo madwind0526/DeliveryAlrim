@@ -14,8 +14,9 @@ final allParcelsProvider = StreamProvider<List<Parcel>>(
 
 /// Day (date-only) → parcels arriving or delivered that day.
 /// Active parcels count on expectedArrivalDate; done ones on deliveredAt.
-final parcelsByDayProvider =
-    Provider<AsyncValue<Map<DateTime, List<Parcel>>>>((ref) {
+final parcelsByDayProvider = Provider<AsyncValue<Map<DateTime, List<Parcel>>>>((
+  ref,
+) {
   return ref.watch(allParcelsProvider).whenData((parcels) {
     final map = <DateTime, List<Parcel>>{};
     for (final p in parcels) {
@@ -29,7 +30,16 @@ final parcelsByDayProvider =
 });
 
 class CalendarScreen extends ConsumerStatefulWidget {
-  const CalendarScreen({super.key});
+  final CalendarFormat initialFormat;
+  final String title;
+
+  const CalendarScreen.monthly({super.key})
+    : initialFormat = CalendarFormat.month,
+      title = StringsKo.monthlyTitle;
+
+  const CalendarScreen.daily({super.key})
+    : initialFormat = CalendarFormat.week,
+      title = StringsKo.dailyTitle;
 
   @override
   ConsumerState<CalendarScreen> createState() => _CalendarScreenState();
@@ -38,6 +48,7 @@ class CalendarScreen extends ConsumerStatefulWidget {
 class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   DateTime _focusedDay = DateTime.now();
   DateTime _selectedDay = DateTime.now();
+  late CalendarFormat _format = widget.initialFormat;
 
   DateTime _dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
 
@@ -46,7 +57,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     final byDayAsync = ref.watch(parcelsByDayProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text(StringsKo.calendarTitle)),
+      appBar: AppBar(title: Text(widget.title)),
       body: byDayAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('$e')),
@@ -59,12 +70,13 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                 firstDay: DateTime.now().subtract(const Duration(days: 365)),
                 lastDay: DateTime.now().add(const Duration(days: 90)),
                 focusedDay: _focusedDay,
-                selectedDayPredicate: (day) =>
-                    isSameDay(day, _selectedDay),
+                calendarFormat: _format,
+                selectedDayPredicate: (day) => isSameDay(day, _selectedDay),
                 eventLoader: (day) => byDay[_dateOnly(day)] ?? const [],
                 startingDayOfWeek: StartingDayOfWeek.sunday,
                 availableCalendarFormats: const {
                   CalendarFormat.month: '월',
+                  CalendarFormat.week: '주',
                   CalendarFormat.twoWeeks: '2주',
                 },
                 headerStyle: const HeaderStyle(titleCentered: true),
@@ -74,10 +86,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                     shape: BoxShape.circle,
                   ),
                   todayDecoration: BoxDecoration(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .primary
-                        .withValues(alpha: 0.35),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.primary.withValues(alpha: 0.35),
                     shape: BoxShape.circle,
                   ),
                   selectedDecoration: BoxDecoration(
@@ -92,6 +103,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                   });
                 },
                 onPageChanged: (focusedDay) => _focusedDay = focusedDay,
+                onFormatChanged: (format) => setState(() {
+                  _format = format;
+                }),
               ),
               const Divider(height: 1),
               Expanded(
@@ -134,8 +148,10 @@ class _DayParcelTile extends StatelessWidget {
         ),
         subtitle: Text('$courierName · $badge'),
         trailing: Chip(
-          label: Text(parcel.status.labelKo,
-              style: const TextStyle(fontSize: 12, color: Colors.white)),
+          label: Text(
+            parcel.status.labelKo,
+            style: const TextStyle(fontSize: 12, color: Colors.white),
+          ),
           backgroundColor: parcel.status.color,
           visualDensity: VisualDensity.compact,
           side: BorderSide.none,

@@ -65,14 +65,12 @@ class _DebugInsertScreenState extends ConsumerState<DebugInsertScreen> {
       deliveredAt: _status == ParcelStatus.delivered ? DateTime.now() : null,
       registeredAt: DateTime.now(),
     );
-    await ref
-        .read(parcelRepositoryProvider)
-        .upsert(parcel, eventNote: '수동 등록');
+    await ref.read(parcelRepositoryProvider).upsert(parcel, eventNote: '수동 등록');
 
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text(StringsKo.insertDone)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text(StringsKo.insertDone)));
     Navigator.of(context).pop();
   }
 
@@ -147,8 +145,10 @@ class _DebugInsertScreenState extends ConsumerState<DebugInsertScreen> {
                       child: Text(
                         _expectedArrival == null
                             ? StringsKo.expectedArrivalLabel
-                            : DateFormat('yyyy년 M월 d일 (E)', 'ko')
-                                .format(_expectedArrival!),
+                            : DateFormat(
+                                'yyyy년 M월 d일 (E)',
+                                'ko',
+                              ).format(_expectedArrival!),
                       ),
                     ),
                     TextButton(

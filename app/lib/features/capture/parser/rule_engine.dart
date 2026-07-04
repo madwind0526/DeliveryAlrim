@@ -27,14 +27,12 @@ class RuleEngine {
   /// Status keywords, checked in order — most terminal first so that
   /// e.g. '배송 완료' wins over the '배송' fragment of weaker states.
   static final List<(RegExp, ParcelStatus)> _statusKeywords = [
-    (RegExp(r'배송\s*완료|배달\s*완료|배송했습니다|전달\s*완료'),
-        ParcelStatus.delivered),
+    (RegExp(r'배송\s*완료|배달\s*완료|배송했습니다|전달\s*완료'), ParcelStatus.delivered),
     (
       RegExp(r'배송\s*출발|배달\s*예정|배달\s*준비|배송\s*예정|오늘\s*도착'),
-      ParcelStatus.outForDelivery
+      ParcelStatus.outForDelivery,
     ),
-    (RegExp(r'배송\s*중|배송이\s*시작|이동\s*중|간선\s*상차'),
-        ParcelStatus.inTransit),
+    (RegExp(r'배송\s*중|배송이\s*시작|이동\s*중|간선\s*상차'), ParcelStatus.inTransit),
     (RegExp(r'집화|집하|상품\s*인수|픽업'), ParcelStatus.pickedUp),
     (RegExp(r'상품\s*준비|출고|발송'), ParcelStatus.preparing),
     (RegExp(r'주문\s*완료|결제\s*완료|접수'), ParcelStatus.registered),
@@ -48,7 +46,7 @@ class RuleEngine {
   ];
 
   static final _productRe = RegExp(r'상품명\s*[:：]\s*([^\n]+)');
-  static final _mallRe = RegExp(r'보내는분\s*[:：]\s*([^\n]+)');
+  static final _mallRe = RegExp(r'보내는(?:분|곳)\s*[:：]\s*([^\n]+)');
   static final _coupangOrderRe = RegExp(r'주문번호\s*[:：]?\s*(\d{6,20})');
 
   ParseResult parse(RawCapture capture) {
@@ -80,15 +78,21 @@ class RuleEngine {
       }
 
       final status = _resolveStatus(rule, text);
-      return ParseResult.success(ExtractedParcel(
-        courierCode: courierCode,
-        trackingNumber: invoice,
-        status: status,
-        productName: _extractProduct(rule, text),
-        mallName: _firstGroup(_mallRe, text),
-        expectedArrivalDate: _extractArrival(text, capture.capturedAt, status),
-        matchedRuleId: rule.id,
-      ));
+      return ParseResult.success(
+        ExtractedParcel(
+          courierCode: courierCode,
+          trackingNumber: invoice,
+          status: status,
+          productName: _extractProduct(rule, text),
+          mallName: _firstGroup(_mallRe, text),
+          expectedArrivalDate: _extractArrival(
+            text,
+            capture.capturedAt,
+            status,
+          ),
+          matchedRuleId: rule.id,
+        ),
+      );
     }
     return ParseResult.rejected(lastReason ?? ParseRejectReason.noRuleMatched);
   }
@@ -113,7 +117,10 @@ class RuleEngine {
   /// key so multiple notifications for one order merge into one parcel:
   /// prefer the order number; fall back to normalized product + date bucket.
   ExtractedParcel _extractCoupang(
-      RawCapture capture, String text, ParseRule rule) {
+    RawCapture capture,
+    String text,
+    ParseRule rule,
+  ) {
     final orderNo = _firstGroup(_coupangOrderRe, text);
     final product = _extractProduct(rule, text);
 
@@ -142,7 +149,10 @@ class RuleEngine {
   }
 
   DateTime? _extractArrival(
-      String text, DateTime capturedAt, ParcelStatus status) {
+    String text,
+    DateTime capturedAt,
+    ParcelStatus status,
+  ) {
     final day = DateTime(capturedAt.year, capturedAt.month, capturedAt.day);
     for (final (re, offset) in _arrivalHints) {
       if (re.hasMatch(text)) return day.add(Duration(days: offset));

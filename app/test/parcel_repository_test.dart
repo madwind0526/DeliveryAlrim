@@ -42,23 +42,26 @@ void main() {
     expect(active.single.productName, '무선 이어폰');
   });
 
-  test('same (courier, tracking) from two channels merges into one row',
-      () async {
-    await repo.upsert(_parcel(channels: {SourceChannel.kakao}));
-    await repo.upsert(_parcel(
-      channels: {SourceChannel.sms},
-      product: '텀블러',
-      status: ParcelStatus.inTransit,
-    ));
+  test(
+    'same (courier, tracking) from two channels merges into one row',
+    () async {
+      await repo.upsert(_parcel(channels: {SourceChannel.kakao}));
+      await repo.upsert(
+        _parcel(
+          channels: {SourceChannel.sms},
+          product: '텀블러',
+          status: ParcelStatus.inTransit,
+        ),
+      );
 
-    final active = await repo.watchActive().first;
-    expect(active, hasLength(1));
-    final merged = active.single;
-    expect(merged.sourceChannels,
-        {SourceChannel.kakao, SourceChannel.sms});
-    expect(merged.productName, '텀블러');
-    expect(merged.status, ParcelStatus.inTransit);
-  });
+      final active = await repo.watchActive().first;
+      expect(active, hasLength(1));
+      final merged = active.single;
+      expect(merged.sourceChannels, {SourceChannel.kakao, SourceChannel.sms});
+      expect(merged.productName, '텀블러');
+      expect(merged.status, ParcelStatus.inTransit);
+    },
+  );
 
   test('status never moves backward on merge', () async {
     await repo.upsert(_parcel(status: ParcelStatus.outForDelivery));
@@ -68,22 +71,28 @@ void main() {
     expect(active.single.status, ParcelStatus.outForDelivery);
   });
 
-  test('timeline events recorded on registration and status advance',
-      () async {
+  test('timeline events recorded on registration and status advance', () async {
     await repo.upsert(
-        _parcel(
-            status: ParcelStatus.registered,
-            registeredAt: DateTime(2026, 7, 4, 9)),
-        eventNote: 'first capture');
-    // Same status again: merged, but no new timeline event.
-    await repo.upsert(_parcel(
+      _parcel(
         status: ParcelStatus.registered,
-        registeredAt: DateTime(2026, 7, 4, 10)));
+        registeredAt: DateTime(2026, 7, 4, 9),
+      ),
+      eventNote: 'first capture',
+    );
+    // Same status again: merged, but no new timeline event.
     await repo.upsert(
-        _parcel(
-            status: ParcelStatus.inTransit,
-            registeredAt: DateTime(2026, 7, 4, 11)),
-        eventNote: 'second capture');
+      _parcel(
+        status: ParcelStatus.registered,
+        registeredAt: DateTime(2026, 7, 4, 10),
+      ),
+    );
+    await repo.upsert(
+      _parcel(
+        status: ParcelStatus.inTransit,
+        registeredAt: DateTime(2026, 7, 4, 11),
+      ),
+      eventNote: 'second capture',
+    );
 
     final parcel = (await repo.watchActive().first).single;
     final events = await repo.watchEvents(parcel.id).first;
@@ -97,7 +106,8 @@ void main() {
   test('terminal statuses appear in done list, not active', () async {
     await repo.upsert(_parcel(tracking: '111111111111'));
     await repo.upsert(
-        _parcel(tracking: '222222222222', status: ParcelStatus.delivered));
+      _parcel(tracking: '222222222222', status: ParcelStatus.delivered),
+    );
 
     final active = await repo.watchActive().first;
     final done = await repo.watchDone().first;

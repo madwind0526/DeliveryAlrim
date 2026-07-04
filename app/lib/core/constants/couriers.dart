@@ -1,6 +1,5 @@
 /// Fixed set of supported Korean couriers.
-/// Mirrors the future Supabase `couriers` table (docs/DESIGN.md §2);
-/// bundled here so PC mode works without a server.
+/// Bundled locally so parser and fixtures work without a server.
 class Courier {
   final String code;
   final String nameKo;

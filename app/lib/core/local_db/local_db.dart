@@ -3,8 +3,7 @@ import 'package:drift_flutter/drift_flutter.dart';
 
 part 'local_db.g.dart';
 
-/// Local parcel store. In PC mode this is the primary store;
-/// after Wave 4 it doubles as the offline cache/queue for Supabase.
+/// Local parcel store. This is the primary database for the single-user app.
 class ParcelRows extends Table {
   TextColumn get id => text()();
   TextColumn get courierCode => text()();
@@ -22,16 +21,14 @@ class ParcelRows extends Table {
   @override
   Set<Column> get primaryKey => {id};
 
-  /// Same dedupe key as the future Supabase table:
-  /// unique (courier_code, tracking_number).
+  /// Dedupe key: one row per courier/tracking number pair.
   @override
   List<Set<Column>> get uniqueKeys => [
-        {courierCode, trackingNumber},
-      ];
+    {courierCode, trackingNumber},
+  ];
 }
 
 /// Per-parcel status history shown on the detail timeline.
-/// Mirrors the future Supabase `tracking_events` table.
 class TrackingEventRows extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get parcelId => text()();
@@ -41,7 +38,8 @@ class TrackingEventRows extends Table {
   TextColumn get description => text().nullable()();
 }
 
-/// Single-row local profile used by the PC-mode fake auth.
+/// Legacy single-row local profile table from the early PC-mode prototype.
+/// Kept for schema compatibility; the app no longer uses login/profile state.
 class LocalProfileRows extends Table {
   IntColumn get id => integer()();
   TextColumn get displayName => text()();
@@ -63,12 +61,12 @@ class AppDatabase extends _$AppDatabase {
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
-        onUpgrade: (m, from, to) async {
-          if (from < 2) {
-            await m.createTable(trackingEventRows);
-          }
-        },
-      );
+    onUpgrade: (m, from, to) async {
+      if (from < 2) {
+        await m.createTable(trackingEventRows);
+      }
+    },
+  );
 
   static QueryExecutor _openConnection() {
     // drift_flutter picks the right sqlite3 setup per platform

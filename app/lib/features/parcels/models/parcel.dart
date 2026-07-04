@@ -19,6 +19,16 @@ enum ParcelStatus {
   static ParcelStatus fromCode(String code) =>
       values.firstWhere((s) => s.code == code, orElse: () => registered);
 
+  /// Maps Sweet Tracker's raw numeric level to the local status enum.
+  static ParcelStatus fromSweettrackerLevel(int? level) => switch (level) {
+    1 => preparing,
+    2 => pickedUp,
+    3 || 4 => inTransit,
+    5 => outForDelivery,
+    6 => delivered,
+    _ => registered,
+  };
+
   /// Statuses shown in the 완료 tab and excluded from polling.
   bool get isTerminal =>
       this == delivered || this == expired || this == invalid;
@@ -27,12 +37,12 @@ enum ParcelStatus {
   bool canTransitionTo(ParcelStatus next) => next.index > index;
 
   Color get color => switch (this) {
-        registered || preparing => const Color(0xFF9E9E9E),
-        pickedUp || inTransit => const Color(0xFF42A5F5),
-        outForDelivery => const Color(0xFF7C6AF7),
-        delivered => const Color(0xFF4ADE80),
-        expired || invalid => const Color(0xFFF87171),
-      };
+    registered || preparing => const Color(0xFF9E9E9E),
+    pickedUp || inTransit => const Color(0xFF42A5F5),
+    outForDelivery => const Color(0xFF7C6AF7),
+    delivered => const Color(0xFF4ADE80),
+    expired || invalid => const Color(0xFFF87171),
+  };
 }
 
 /// Source channel a parcel was captured from.
