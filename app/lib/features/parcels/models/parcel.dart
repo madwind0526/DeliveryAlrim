@@ -29,7 +29,7 @@ enum ParcelStatus {
     _ => registered,
   };
 
-  /// Statuses shown in the 완료 tab and excluded from polling.
+  /// Statuses shown in the terminal tab and excluded from polling.
   bool get isTerminal =>
       this == delivered || this == expired || this == invalid;
 

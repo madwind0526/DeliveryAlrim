@@ -63,14 +63,31 @@ class KakaoAccessibilityService : AccessibilityService() {
         }
         val sender = SENDER_RE.find(message)?.groupValues?.getOrNull(1)?.trim()
 
+        val capturedAtMillis = System.currentTimeMillis()
+
         getSharedPreferences(PREFS, MODE_PRIVATE)
             .edit()
             .putString("last_courier", courier)
             .putString("last_invoice", invoice)
             .putString("last_status", status)
             .putString("last_sender", sender)
-            .putLong("last_captured_at", System.currentTimeMillis())
+            .putLong("last_captured_at", capturedAtMillis)
             .apply()
+
+        try {
+            LocalParcelSqliteStore(this).upsert(
+                KakaoParcelCapture(
+                    courierCode = courier,
+                    trackingNumber = invoice,
+                    status = status,
+                    sender = sender,
+                    capturedAtMillis = capturedAtMillis,
+                ),
+            )
+            Log.i(TAG, "persisted capture to local sqlite invoice=$invoice")
+        } catch (error: RuntimeException) {
+            Log.w(TAG, "failed to persist capture", error)
+        }
 
         Log.i(
             TAG,

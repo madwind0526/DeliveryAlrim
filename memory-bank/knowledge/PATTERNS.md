@@ -83,6 +83,26 @@ fallbackResourceIds = [
 ]
 ```
 
+## Android 접근성 캡처 → 로컬 SQLite 즉시 저장
+
+**사용 시점:** Flutter UI가 떠 있지 않아도 알림톡 캡처 결과를 배송 DB에 남겨야 할 때
+
+`AccessibilityService`는 캡처 직후 두 경로에 기록한다.
+
+1. `SharedPreferences("kakao_accessibility")`: Flutter `MethodChannel` backfill용 최신 스냅샷
+2. `app_flutter/check_shipping.sqlite`: Drift와 같은 SQLite 파일에 네이티브 직접 upsert
+
+검증 결과:
+
+- 카카오톡 CJ대한통운 채팅방을 열면 `CheckShippingKakao: persisted capture to local sqlite invoice=594239221744` 로그가 찍힘
+- Android DB `parcel_rows`에는 `cj / 594239221744 / delivered / 삼성전자 / kakao`가 1 row로 유지됨
+- 같은 운송장을 다시 캡처하면 중복 row를 만들지 않고 `delivered_at` 등 최신 필드만 갱신됨
+
+주의:
+
+- Drift의 Android DateTime 저장값은 초 단위 integer라 네이티브에서도 `millis / 1000`으로 저장한다.
+- 서비스가 앱 최초 실행 전 DB를 만들 수도 있으므로 `parcel_rows`, `tracking_event_rows`, `local_profile_rows`와 `PRAGMA user_version = 2`를 함께 보장한다.
+
 <!-- 예시 형식:
 
 ## [패턴 이름]

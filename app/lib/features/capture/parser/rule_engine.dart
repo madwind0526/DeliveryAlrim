@@ -25,7 +25,7 @@ class RuleEngine {
   ];
 
   /// Status keywords, checked in order — most terminal first so that
-  /// e.g. '배송 완료' wins over the '배송' fragment of weaker states.
+  /// e.g. terminal completion phrases win over weaker in-transit fragments.
   static final List<(RegExp, ParcelStatus)> _statusKeywords = [
     (RegExp(r'배송\s*완료|배달\s*완료|배송했습니다|전달\s*완료'), ParcelStatus.delivered),
     (
@@ -38,7 +38,7 @@ class RuleEngine {
     (RegExp(r'주문\s*완료|결제\s*완료|접수'), ParcelStatus.registered),
   ];
 
-  /// Arrival-day hints ('오늘/금일/내일 도착·배달·배송') → day offset
+  /// Arrival-day hints map to a day offset
   /// from the capture time. Checked before status-based fallbacks.
   static final List<(RegExp, int)> _arrivalHints = [
     (RegExp(r'(오늘|금일)\s*(중\s*)?(도착|배달|배송)'), 0),

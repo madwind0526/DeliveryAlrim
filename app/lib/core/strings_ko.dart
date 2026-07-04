@@ -59,6 +59,9 @@ abstract final class StringsKo {
   static const userEmailSection = '이메일 모니터링';
   static const userSnsSection = 'SNS 모니터링';
   static const userSecureStorage = '암호화 저장';
+  static const userKakaoSync = '카카오톡 동기화';
+  static const userKakaoSyncDone = '카카오톡 배송 정보를 동기화했습니다';
+  static const userKakaoSyncEmpty = '새 카카오톡 배송 정보가 없습니다';
   static const addSource = '추가';
   static const sourceEnabled = '사용';
   static const sourceDisabled = '사용 안 함';

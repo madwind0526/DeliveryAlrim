@@ -1,18 +1,40 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/strings_ko.dart';
+import '../capture/kakao_capture_sync.dart';
 
-class UserSourcesScreen extends StatefulWidget {
+class UserSourcesScreen extends ConsumerStatefulWidget {
   const UserSourcesScreen({super.key});
 
   @override
-  State<UserSourcesScreen> createState() => _UserSourcesScreenState();
+  ConsumerState<UserSourcesScreen> createState() => _UserSourcesScreenState();
 }
 
-class _UserSourcesScreenState extends State<UserSourcesScreen> {
+class _UserSourcesScreenState extends ConsumerState<UserSourcesScreen> {
   bool _emailEnabled = false;
   bool _kakaoEnabled = true;
   bool _secureStorage = true;
+  bool _syncingKakao = false;
+
+  Future<void> _syncKakao() async {
+    if (_syncingKakao) return;
+    setState(() => _syncingKakao = true);
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final synced = await ref.read(kakaoCaptureSyncProvider).syncLatest();
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            synced ? StringsKo.userKakaoSyncDone : StringsKo.userKakaoSyncEmpty,
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _syncingKakao = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -51,6 +73,19 @@ class _UserSourcesScreenState extends State<UserSourcesScreen> {
             ),
             value: _kakaoEnabled,
             onChanged: (value) => setState(() => _kakaoEnabled = value),
+          ),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: FilledButton.icon(
+              onPressed: _syncingKakao || !_kakaoEnabled ? null : _syncKakao,
+              icon: _syncingKakao
+                  ? const SizedBox.square(
+                      dimension: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.sync),
+              label: const Text(StringsKo.userKakaoSync),
+            ),
           ),
           SwitchListTile(
             title: const Text(StringsKo.userSecureStorage),
