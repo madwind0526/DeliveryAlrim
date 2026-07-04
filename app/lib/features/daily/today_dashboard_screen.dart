@@ -26,9 +26,13 @@ class TodayDashboardScreen extends ConsumerWidget {
           final today = DateUtils.dateOnly(DateTime.now());
           final ordered = _ordered(parcels);
           final inTransit = _inTransit(parcels);
+          final completedToday = _completedToday(parcels, today);
           final dueToday = _dueToday(parcels, today);
           final allEmpty =
-              ordered.isEmpty && inTransit.isEmpty && dueToday.isEmpty;
+              ordered.isEmpty &&
+              inTransit.isEmpty &&
+              completedToday.isEmpty &&
+              dueToday.isEmpty;
 
           if (allEmpty) {
             return Center(
@@ -45,6 +49,7 @@ class TodayDashboardScreen extends ConsumerWidget {
               _SummaryStrip(
                 ordered: ordered.length,
                 inTransit: inTransit.length,
+                completedToday: completedToday.length,
                 dueToday: dueToday.length,
               ),
               const SizedBox(height: 12),
@@ -57,6 +62,11 @@ class TodayDashboardScreen extends ConsumerWidget {
                 title: StringsKo.todayInTransit,
                 icon: Icons.local_shipping_outlined,
                 parcels: inTransit,
+              ),
+              _TodaySection(
+                title: StringsKo.todayCompleted,
+                icon: Icons.check_circle_outline,
+                parcels: completedToday,
               ),
               _TodaySection(
                 title: StringsKo.todayDue,
@@ -92,6 +102,19 @@ class TodayDashboardScreen extends ConsumerWidget {
       ..sort((a, b) => b.registeredAt.compareTo(a.registeredAt));
   }
 
+  List<Parcel> _completedToday(List<Parcel> parcels, DateTime today) {
+    return parcels.where((p) {
+      if (p.status != ParcelStatus.delivered) return false;
+      final delivered = p.deliveredAt;
+      if (delivered == null) return false;
+      return DateUtils.isSameDay(delivered, today);
+    }).toList()..sort((a, b) {
+      final aTime = a.deliveredAt ?? a.registeredAt;
+      final bTime = b.deliveredAt ?? b.registeredAt;
+      return bTime.compareTo(aTime);
+    });
+  }
+
   List<Parcel> _dueToday(List<Parcel> parcels, DateTime today) {
     return parcels.where((p) {
       if (p.status.isTerminal) return false;
@@ -106,30 +129,31 @@ class TodayDashboardScreen extends ConsumerWidget {
 class _SummaryStrip extends StatelessWidget {
   final int ordered;
   final int inTransit;
+  final int completedToday;
   final int dueToday;
 
   const _SummaryStrip({
     required this.ordered,
     required this.inTransit,
+    required this.completedToday,
     required this.dueToday,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    final compact = MediaQuery.sizeOf(context).width < 520;
+    return GridView.count(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisCount: compact ? 2 : 4,
+      crossAxisSpacing: 8,
+      mainAxisSpacing: 8,
+      childAspectRatio: compact ? 2.5 : 1.8,
       children: [
-        Expanded(
-          child: _SummaryItem(label: StringsKo.todayOrdered, value: ordered),
-        ),
-        Expanded(
-          child: _SummaryItem(
-            label: StringsKo.todayInTransit,
-            value: inTransit,
-          ),
-        ),
-        Expanded(
-          child: _SummaryItem(label: StringsKo.todayDue, value: dueToday),
-        ),
+        _SummaryItem(label: StringsKo.todayOrdered, value: ordered),
+        _SummaryItem(label: StringsKo.todayInTransit, value: inTransit),
+        _SummaryItem(label: StringsKo.todayCompleted, value: completedToday),
+        _SummaryItem(label: StringsKo.todayDue, value: dueToday),
       ],
     );
   }
@@ -144,35 +168,31 @@ class _SummaryItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4),
-      child: Container(
-        height: 72,
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-        decoration: BoxDecoration(
-          border: Border.all(color: colors.outlineVariant),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              '$value',
-              style: Theme.of(
-                context,
-              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(
-                context,
-              ).textTheme.labelSmall?.copyWith(color: colors.onSurfaceVariant),
-            ),
-          ],
-        ),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+      decoration: BoxDecoration(
+        border: Border.all(color: colors.outlineVariant),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            '$value',
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(
+              context,
+            ).textTheme.labelSmall?.copyWith(color: colors.onSurfaceVariant),
+          ),
+        ],
       ),
     );
   }

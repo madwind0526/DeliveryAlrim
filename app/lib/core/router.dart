@@ -143,7 +143,7 @@ class _ShellScaffold extends StatelessWidget {
                   NavigationDestination(
                     icon: Icon(d.icon),
                     selectedIcon: Icon(d.selectedIcon),
-                    label: d.label,
+                    label: '',
                   ),
               ],
             ),
