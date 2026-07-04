@@ -22,6 +22,11 @@ Gmail API (on-device polling) ──────┘        ▼
 
 Key decisions:
 
+- **PC-first dual-mode development** (BlueTooth-Comm 패턴 이식): Flutter 프로젝트는 Windows + Android 타깃을 동시에 가진다. 플랫폼 의존 기능은 인터페이스 뒤에 격리하고, Windows에서는 가짜/주입 구현으로 전체 파이프라인을 검증한 뒤 Android 실기기/실서버를 마지막에 연결한다.
+  - `CaptureSource` interface — Android: NotificationListenerService / Windows: fixture 파일 주입 + 디버그 화면
+  - `ParcelRepository` / `AuthRepository` interface — 초기: 로컬 drift(SQLite) + 로컬 프로필 / 이후: Supabase 구현으로 교체 (로컬 구현은 오프라인 큐·캐시로 계속 사용)
+  - `Platform.isWindows` 분기로 sqflite/drift ffi 초기화 등 처리 (BlueTooth-Comm `main.dart` 참조)
+  - 파싱 엔진·검증기·중복제거·상태 머신은 순수 Dart → 플랫폼 무관, fixture 코퍼스로 PC에서 완성
 - **Gmail parsing runs on-device** (WorkManager periodic task), not in an Edge Function. Keeps the OAuth refresh token in `flutter_secure_storage` instead of the server, reuses the same Google sign-in, and saves Edge Function invocations for the tracking poller.
 - **Raw notification text stays on-device** (local drift DB) for privacy; only extracted, structured parcel data goes to Supabase. The local raw store doubles as the replay/debug corpus.
 - **Parse rules are DB-driven** (`parse_rules` table, synced to the app with a version number, bundled JSON fallback) so kakao/mall template changes ship without an app release.
@@ -244,14 +249,14 @@ Navigation: `go_router` + auth redirect. State: `flutter_riverpod`.
 | `intl`, `freezed`, `json_serializable` | 포맷/모델 |
 | (flag) `another_telephony` | 직접 SMS 읽기 (사이드로드 빌드 전용) |
 
-## 8. Wave Breakdown (검증 기준 포함)
+## 8. Wave Breakdown (PC-first, 검증 기준 포함)
 
-- **Wave 1 — Walking skeleton**: Supabase 프로젝트 + 0001_init.sql, Flutter scaffold, 로그인, 목록, 디버그 삽입. *검증*: 두 계정 RLS 교차 확인.
-- **Wave 2 — Tracking loop**: sweettracker.ts, track-poll, 0003_cron.sql, 상태 머신, 상세 타임라인. *검증*: 실제 CJ 운송장으로 하루 동안 상태 진행 확인, 배달완료 후 폴링 중단 확인.
-- **Wave 3 — Notification capture**: 0002_parse_rules.sql + seed, 리스너 서비스, 규칙 엔진, 검증기, 업서터+오프라인 큐, 재생 화면, 온보딩. *검증*: 실제 알림톡/SMS가 자동 등록, 2채널 → 1행 병합.
-- **Wave 4 — Gmail + Coupang**: Gmail incremental scope + WorkManager, 쿠팡 매퍼. *검증*: 배송 메일 파싱, 재생 화면으로 쿠팡 시퀀스 registered→delivered.
-- **Wave 5 — 캘린더 + 알림**: table_calendar, 배지, 로컬 알림, expected_arrival 휴리스틱. *검증*: 날짜 셀 정확성, explain으로 인덱스 사용 확인.
-- **Wave 6 — Hardening**: 배터리 최적화 가이드, 리스너 감시(24h 무캡처 → 리바인드+경고 배너), 만료 정리 cron, 주간 heartbeat cron, 릴리즈 빌드. *검증*: 삼성 기기 48h 소크 테스트.
+- **Wave 1 — PC 모드 골격** *(환경: PC)*: Flutter 프로젝트(Windows+Android 타깃), `AuthRepository`(로컬 프로필 가짜 인증) + `ParcelRepository`(로컬 drift 구현), 배송 목록 UI(진행중/완료 탭), 디버그 삽입 화면. *검증*: Windows 데스크톱에서 실행, 가짜 배송 삽입 → 목록 표시, `flutter analyze`/`flutter test` 통과.
+- **Wave 2 — 파싱 엔진 + fixture 코퍼스** *(PC)*: `test/fixtures/captures/`에 알림톡/SMS/배송메일 샘플, rule_engine + tracking_number_validator + 번들 규칙 JSON, 중복제거(`parcel_upserter` 로컬 버전), `/debug/replay` 주입 화면. *검증*: fixture 코퍼스 단위 테스트 그린, 주입한 텍스트가 자동으로 목록에 등록, 2채널 → 1행 병합.
+- **Wave 3 — 상태 머신 + 캘린더** *(PC)*: parcel_status 상태 머신(단조 증가), 상세 타임라인 화면, table_calendar 일별/월별 뷰 + 배지, expected_arrival 휴리스틱, 쿠팡 상태 매퍼(합성 키) — 전부 fixture 데이터로. *검증*: 시뮬레이션 시퀀스 registered→delivered, 캘린더 날짜 셀 정확성.
+- **Wave 4 — Supabase 실연결** *(PC→서버)*: Supabase 프로젝트 + 0001~0003 마이그레이션(RLS), `ParcelRepository` Supabase 구현 교체 + 오프라인 큐, 이메일 로그인 → Google 로그인, parse_rules OTA 동기화, track-poll Edge Function + pg_cron + 스마트택배 API. *검증*: 두 계정 RLS 교차 확인, 실운송장 상태 자동 갱신, 배달완료 후 폴링 중단.
+- **Wave 5 — Android 실기기** *(폰)*: 알림 리스너 `CaptureSource` 구현 + foreground service, 권한 온보딩, Gmail API(WorkManager), 실제 알림톡/SMS/메일로 파싱 검증 → 실캡처를 fixture 코퍼스에 추가. *검증*: 실제 알림 자동 등록, Gmail 배송 메일 파싱.
+- **Wave 6 — Hardening** *(폰)*: 배터리 최적화 가이드, 리스너 감시(24h 무캡처 → 리바인드+경고 배너), 만료 정리 cron, 주간 heartbeat cron, 로컬 알림(배송출발/배달완료), 릴리즈 빌드. *검증*: 삼성 기기 48h 소크 테스트.
 
 ## 9. Risks & Mitigations
 

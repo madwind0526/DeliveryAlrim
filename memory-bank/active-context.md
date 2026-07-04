@@ -2,9 +2,10 @@
 
 ## Current Focus
 
-- 프로젝트 초기 설정 완료 (CLAUDE.md, docs/DESIGN.md, git 초기화)
-- 다음: Wave 0 잔여 — Flutter 프로젝트 생성(app/), Supabase 프로젝트 셋업
-- 사용자 콘솔 작업 대기: Supabase 프로젝트 생성, Google Cloud OAuth + Gmail API, 스마트택배 API 키 발급
+- Wave 1 진행 중: Flutter 프로젝트(Windows+Android 타깃) 생성 + PC 모드 골격
+- 로컬 인증(AuthRepository) + 로컬 저장소(ParcelRepository, drift) + 배송 목록 UI + 디버그 삽입
+- PC-first 전략 확정: Supabase/Google 로그인/실기기는 Wave 4~5로 연기
+- 참고 패턴: C:\Claude\BlueTooth-Comm\mesh_comm (Platform.isWindows 분기, sqflite ffi)
 
 <!-- 
 규칙:

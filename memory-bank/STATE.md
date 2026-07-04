@@ -2,17 +2,19 @@
 
 ## Current Wave
 
-- **Wave:** 0
-- **Status:** In Progress (초기화 완료, Flutter/Supabase 셋업 남음)
+- **Wave:** 1
+- **Status:** In Progress (PC 모드 골격)
 - **Cache Status:** CLEAN
-- **Last Checkpoint:** 2026-07-04 초기 커밋
+- **Last Checkpoint:** 2026-07-04 PC-first 재설계 커밋
 
 ## Wave History
 
 | Wave | 작업 내용 | 상태 |
 |------|-----------|------|
-| 0 | 프로젝트 초기화 (CLAUDE.md, DESIGN.md, git) → Flutter/Supabase 셋업 | In Progress |
+| 0 | 프로젝트 초기화 (CLAUDE.md, DESIGN.md, git) | Done |
+| 1 | PC 모드 골격 (Flutter Win+Android, 로컬 인증/저장소, 목록 UI) | In Progress |
 
 ## Session Notes
 
-- 설계 확정: docs/DESIGN.md 참조 (Supabase + Flutter + 알림/SMS/Gmail 자동 수집)
+- PC-first 전략: docs/DESIGN.md §0 및 §8 Wave Breakdown 참조
+- Supabase/Google 로그인은 Wave 4, 실기기(알림 리스너)는 Wave 5

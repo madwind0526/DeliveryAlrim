@@ -25,7 +25,8 @@
 ```bash
 # Flutter app (app/)
 cd app
-flutter run                      # dev run on connected device
+flutter run -d windows           # PC-mode dev run (primary during Waves 1-4)
+flutter run                      # dev run on connected Android device
 flutter build apk --release     # release APK (sideload)
 flutter test                     # parser fixture corpus tests
 
@@ -48,17 +49,19 @@ supabase functions serve track-poll   # local test
 - 파싱 규칙은 `parse_rules` 테이블에서 OTA 동기화 — 알림 문구가 바뀌어도 앱 재배포 불필요.
 - 상태 머신은 단조 증가(역행 금지): 등록됨→상품준비→집화→배송중→배송출발→배달완료. 배달완료/만료/번호오류는 폴링 제외.
 
-## Wave Roadmap
+## Wave Roadmap (PC-first)
 
-| Wave | 내용 | 완료 기준 |
-|------|------|----------|
-| 0 | 초기화: CLAUDE.md, git, Flutter/Supabase 프로젝트 셋업 | 앱 빌드 + Supabase 연결 |
-| 1 | 로그인(Google+이메일) + 배송 목록 + 디버그 삽입 | 실기기 로그인, RLS 검증 |
-| 2 | 상태 갱신 루프 (pg_cron + Edge Function + 스마트택배) | 실운송장 상태 자동 갱신 |
-| 3 | 알림 캡처 + 파싱 엔진 + 중복제거 + 온보딩 | 실제 알림이 자동 등록됨 |
-| 4 | Gmail 파싱 + 쿠팡 특수 처리 | 메일/쿠팡 알림 파싱 확인 |
-| 5 | 일별/월별 캘린더 + 로컬 알림 | 캘린더 도착 현황 정확 |
-| 6 | 하드닝 (배터리 최적화, 감시 로직) + 폴리싱 | 삼성 기기 48h 소크 테스트 |
+BlueTooth-Comm(`C:\Claude\BlueTooth-Comm`) 패턴: Windows+Android 이중 타깃, 플랫폼 의존 기능은 인터페이스 뒤에 격리(`CaptureSource`, `ParcelRepository`, `AuthRepository`), PC에서 fixture로 검증 후 실기기/실서버 연결.
+
+| Wave | 내용 | 환경 |
+|------|------|------|
+| 0 | 초기화: CLAUDE.md, git, 설계 | 완료 |
+| 1 | Flutter(Win+Android) + 로컬 인증/저장소 + 배송 목록 UI | PC |
+| 2 | 파싱 엔진 + fixture 코퍼스 + 주입 디버그 화면 + 단위 테스트 | PC |
+| 3 | 상태 머신 + 일별/월별 캘린더 + 상세 타임라인 + 쿠팡 매퍼 | PC |
+| 4 | Supabase 실연결(RLS) + 이메일→Google 로그인 + track-poll | PC→서버 |
+| 5 | Android 실기기: 알림 리스너 + 온보딩 + Gmail API | 폰 |
+| 6 | 하드닝 (배터리 최적화, 감시, 소크 테스트) | 폰 |
 
 ## Key Conventions
 
