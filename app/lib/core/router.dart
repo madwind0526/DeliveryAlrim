@@ -10,6 +10,7 @@ import '../features/preferences/settings_screen.dart';
 import '../features/preferences/user_sources_screen.dart';
 import '../features/parcels/parcel_detail_screen.dart';
 import '../features/parcels/parcel_list_screen.dart';
+import 'app_info.dart';
 import 'strings_ko.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -86,39 +87,51 @@ class _ShellScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     final destinations = const [
       _NavItem(
-        Icons.storefront_outlined,
-        Icons.storefront,
+        Icons.business_outlined,
+        Icons.business_outlined,
         StringsKo.navCompany,
       ),
-      _NavItem(Icons.today_outlined, Icons.today, StringsKo.navDaily),
+      _NavItem(
+        Icons.calendar_today_outlined,
+        Icons.calendar_today_outlined,
+        StringsKo.navDaily,
+      ),
       _NavItem(
         Icons.calendar_month_outlined,
-        Icons.calendar_month,
+        Icons.calendar_month_outlined,
         StringsKo.navMonthly,
       ),
+      _NavItem(Icons.tune_outlined, Icons.tune_outlined, StringsKo.navFilter),
       _NavItem(
-        Icons.filter_alt_outlined,
-        Icons.filter_alt,
-        StringsKo.navFilter,
+        Icons.settings_outlined,
+        Icons.settings_outlined,
+        StringsKo.navSetting,
       ),
-      _NavItem(Icons.settings_outlined, Icons.settings, StringsKo.navSetting),
-      _NavItem(Icons.person_outline, Icons.person, StringsKo.navUser),
+      _NavItem(Icons.person_outline, Icons.person_outline, StringsKo.navUser),
     ];
     final wide = MediaQuery.sizeOf(context).width >= 720;
 
     return Scaffold(
-      body: wide
-          ? Row(
-              children: [
-                _SideMenu(shell: shell, destinations: destinations),
-                const VerticalDivider(width: 1),
-                Expanded(child: shell),
-              ],
-            )
-          : shell,
+      body: Column(
+        children: [
+          const _AppHeader(),
+          Expanded(
+            child: wide
+                ? Row(
+                    children: [
+                      _SideMenu(shell: shell, destinations: destinations),
+                      const VerticalDivider(width: 1),
+                      Expanded(child: shell),
+                    ],
+                  )
+                : shell,
+          ),
+        ],
+      ),
       bottomNavigationBar: wide
           ? null
           : NavigationBar(
+              labelBehavior: NavigationDestinationLabelBehavior.alwaysHide,
               selectedIndex: shell.currentIndex,
               onDestinationSelected: (index) => shell.goBranch(
                 index,
@@ -133,6 +146,46 @@ class _ShellScaffold extends StatelessWidget {
                   ),
               ],
             ),
+    );
+  }
+}
+
+class _AppHeader extends ConsumerWidget {
+  const _AppHeader();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final colors = Theme.of(context).colorScheme;
+    final version = ref
+        .watch(appBuildInfoProvider)
+        .maybeWhen(data: (info) => info.display, orElse: () => '...');
+    return SafeArea(
+      bottom: false,
+      child: Container(
+        height: 44,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        decoration: BoxDecoration(
+          color: colors.surface,
+          border: Border(bottom: BorderSide(color: colors.outlineVariant)),
+        ),
+        child: Row(
+          children: [
+            Text(
+              StringsKo.appTitle,
+              style: Theme.of(
+                context,
+              ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '빌드 $version',
+              style: Theme.of(
+                context,
+              ).textTheme.labelMedium?.copyWith(color: colors.onSurfaceVariant),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -155,7 +208,7 @@ class _SideMenu extends StatelessWidget {
   Widget build(BuildContext context) {
     return SafeArea(
       child: SizedBox(
-        width: 96,
+        width: 64,
         child: Column(
           children: [
             const SizedBox(height: 12),
@@ -198,33 +251,23 @@ class _SideMenuButton extends StatelessWidget {
     final colors = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(8),
-        onTap: onPressed,
-        child: Container(
-          width: 80,
-          height: 64,
-          decoration: BoxDecoration(
-            color: selected ? colors.primaryContainer : Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                selected ? item.selectedIcon : item.icon,
-                color: selected ? colors.onPrimaryContainer : null,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                item.label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: selected ? colors.onPrimaryContainer : null,
-                ),
-              ),
-            ],
+      child: Tooltip(
+        message: item.label,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(8),
+          onTap: onPressed,
+          child: Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: selected ? colors.primaryContainer : Colors.transparent,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              selected ? item.selectedIcon : item.icon,
+              color: selected ? colors.onPrimaryContainer : null,
+              semanticLabel: item.label,
+            ),
           ),
         ),
       ),
