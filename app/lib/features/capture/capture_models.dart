@@ -52,6 +52,7 @@ class ExtractedParcel {
   final ParcelStatus status;
   final String? productName;
   final String? mallName;
+  final DateTime? expectedArrivalDate;
   final String matchedRuleId;
 
   const ExtractedParcel({
@@ -60,6 +61,7 @@ class ExtractedParcel {
     required this.status,
     this.productName,
     this.mallName,
+    this.expectedArrivalDate,
     required this.matchedRuleId,
   });
 
@@ -74,6 +76,7 @@ class ExtractedParcel {
       productName: productName,
       mallName: mallName,
       sourceChannels: {capture.channel.code},
+      expectedArrivalDate: expectedArrivalDate,
       deliveredAt: delivered ? capture.capturedAt : null,
       registeredAt: capture.capturedAt,
     );

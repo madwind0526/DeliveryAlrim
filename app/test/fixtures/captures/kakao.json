@@ -26,7 +26,8 @@
       "trackingNumber": "641234567890",
       "status": "out_for_delivery",
       "productName": "프리미엄 물티슈 100매 10팩",
-      "mallName": "지마켓"
+      "mallName": "지마켓",
+      "arrivalOffsetDays": 0
     }
   },
   {

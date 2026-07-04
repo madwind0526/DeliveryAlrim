@@ -65,9 +65,10 @@ class _ReplayScreenState extends ConsumerState<ReplayScreen> {
     final result = _lastResult;
     if (capture == null || result == null || !result.matched) return;
 
-    await ref
-        .read(parcelRepositoryProvider)
-        .upsert(result.parcel!.toParcel(capture));
+    await ref.read(parcelRepositoryProvider).upsert(
+          result.parcel!.toParcel(capture),
+          eventNote: '알림 주입 (${capture.channel.labelKo})',
+        );
 
     if (!mounted) return;
     setState(() => _registered = true);

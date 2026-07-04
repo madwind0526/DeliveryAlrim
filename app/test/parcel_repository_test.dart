@@ -9,6 +9,7 @@ Parcel _parcel({
   ParcelStatus status = ParcelStatus.registered,
   String? product,
   Set<String> channels = const {SourceChannel.manual},
+  DateTime? registeredAt,
 }) {
   return Parcel(
     id: '',
@@ -17,7 +18,7 @@ Parcel _parcel({
     status: status,
     productName: product,
     sourceChannels: channels,
-    registeredAt: DateTime(2026, 7, 4),
+    registeredAt: registeredAt ?? DateTime(2026, 7, 4),
   );
 }
 
@@ -65,6 +66,32 @@ void main() {
 
     final active = await repo.watchActive().first;
     expect(active.single.status, ParcelStatus.outForDelivery);
+  });
+
+  test('timeline events recorded on registration and status advance',
+      () async {
+    await repo.upsert(
+        _parcel(
+            status: ParcelStatus.registered,
+            registeredAt: DateTime(2026, 7, 4, 9)),
+        eventNote: 'first capture');
+    // Same status again: merged, but no new timeline event.
+    await repo.upsert(_parcel(
+        status: ParcelStatus.registered,
+        registeredAt: DateTime(2026, 7, 4, 10)));
+    await repo.upsert(
+        _parcel(
+            status: ParcelStatus.inTransit,
+            registeredAt: DateTime(2026, 7, 4, 11)),
+        eventNote: 'second capture');
+
+    final parcel = (await repo.watchActive().first).single;
+    final events = await repo.watchEvents(parcel.id).first;
+
+    expect(events, hasLength(2));
+    expect(events.first.status, ParcelStatus.inTransit);
+    expect(events.first.description, 'second capture');
+    expect(events.last.status, ParcelStatus.registered);
   });
 
   test('terminal statuses appear in done list, not active', () async {

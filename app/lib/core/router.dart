@@ -1,14 +1,17 @@
 import 'dart:async';
 
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../features/auth/login_screen.dart';
+import '../features/calendar/calendar_screen.dart';
 import '../features/debug/debug_insert_screen.dart';
 import '../features/debug/replay_screen.dart';
+import '../features/parcels/parcel_detail_screen.dart';
 import '../features/parcels/parcel_list_screen.dart';
 import 'providers.dart';
+import 'strings_ko.dart';
 
 /// Bridges a Stream into a Listenable so go_router re-evaluates
 /// redirects whenever auth state changes.
@@ -43,7 +46,24 @@ final routerProvider = Provider<GoRouter>((ref) {
     },
     routes: [
       GoRoute(path: '/login', builder: (_, _) => const LoginScreen()),
-      GoRoute(path: '/', builder: (_, _) => const ParcelListScreen()),
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, shell) => _ShellScaffold(shell: shell),
+        branches: [
+          StatefulShellBranch(routes: [
+            GoRoute(path: '/', builder: (_, _) => const ParcelListScreen()),
+          ]),
+          StatefulShellBranch(routes: [
+            GoRoute(
+                path: '/calendar',
+                builder: (_, _) => const CalendarScreen()),
+          ]),
+        ],
+      ),
+      GoRoute(
+        path: '/parcel/:id',
+        builder: (_, state) =>
+            ParcelDetailScreen(parcelId: state.pathParameters['id']!),
+      ),
       GoRoute(
         path: '/debug/insert',
         builder: (_, _) => const DebugInsertScreen(),
@@ -55,3 +75,35 @@ final routerProvider = Provider<GoRouter>((ref) {
     ],
   );
 });
+
+class _ShellScaffold extends StatelessWidget {
+  final StatefulNavigationShell shell;
+
+  const _ShellScaffold({required this.shell});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: shell,
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: shell.currentIndex,
+        onDestinationSelected: (index) => shell.goBranch(
+          index,
+          initialLocation: index == shell.currentIndex,
+        ),
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.local_shipping_outlined),
+            selectedIcon: Icon(Icons.local_shipping),
+            label: StringsKo.navParcels,
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.calendar_month_outlined),
+            selectedIcon: Icon(Icons.calendar_month),
+            label: StringsKo.navCalendar,
+          ),
+        ],
+      ),
+    );
+  }
+}

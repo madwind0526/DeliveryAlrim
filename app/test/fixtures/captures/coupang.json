@@ -11,7 +11,8 @@
       "matched": true,
       "courierCode": "coupang_direct",
       "trackingNumberPrefix": "cp:",
-      "status": "delivered"
+      "status": "delivered",
+      "arrivalOffsetDays": 0
     }
   },
   {
@@ -26,7 +27,8 @@
       "matched": true,
       "courierCode": "coupang_direct",
       "trackingNumberPrefix": "cp:",
-      "status": "out_for_delivery"
+      "status": "out_for_delivery",
+      "arrivalOffsetDays": 0
     }
   },
   {
@@ -42,7 +44,8 @@
       "courierCode": "coupang_direct",
       "trackingNumberPrefix": "cp:",
       "status": "registered",
-      "productName": "트레비 탄산수 500ml 20입"
+      "productName": "트레비 탄산수 500ml 20입",
+      "arrivalOffsetDays": 1
     }
   }
 ]

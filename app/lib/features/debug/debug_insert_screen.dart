@@ -65,7 +65,9 @@ class _DebugInsertScreenState extends ConsumerState<DebugInsertScreen> {
       deliveredAt: _status == ParcelStatus.delivered ? DateTime.now() : null,
       registeredAt: DateTime.now(),
     );
-    await ref.read(parcelRepositoryProvider).upsert(parcel);
+    await ref
+        .read(parcelRepositoryProvider)
+        .upsert(parcel, eventNote: '수동 등록');
 
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(

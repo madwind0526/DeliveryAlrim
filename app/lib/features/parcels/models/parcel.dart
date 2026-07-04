@@ -95,14 +95,16 @@ class Parcel {
 
   /// Merge a re-captured sighting of the same parcel into this one:
   /// union channels, fill missing fields, advance status monotonically.
+  /// [other] is the newer sighting, so its dates win when present
+  /// (an arrival estimate can shift between notifications).
   Parcel merge(Parcel other) {
     return copyWith(
       status: status.canTransitionTo(other.status) ? other.status : status,
       productName: productName ?? other.productName,
       mallName: mallName ?? other.mallName,
       sourceChannels: {...sourceChannels, ...other.sourceChannels},
-      expectedArrivalDate: expectedArrivalDate ?? other.expectedArrivalDate,
-      deliveredAt: deliveredAt ?? other.deliveredAt,
+      expectedArrivalDate: other.expectedArrivalDate ?? expectedArrivalDate,
+      deliveredAt: other.deliveredAt ?? deliveredAt,
     );
   }
 }

@@ -75,6 +75,19 @@ void main() {
           if (expected.containsKey('mallName')) {
             expect(parcel.mallName, expected['mallName']);
           }
+          if (expected.containsKey('arrivalOffsetDays')) {
+            final offset = expected['arrivalOffsetDays'] as int?;
+            if (offset == null) {
+              expect(parcel.expectedArrivalDate, isNull);
+            } else {
+              final captured =
+                  DateTime.parse(item['capturedAt'] as String);
+              final day =
+                  DateTime(captured.year, captured.month, captured.day)
+                      .add(Duration(days: offset));
+              expect(parcel.expectedArrivalDate, day);
+            }
+          }
         });
       }
     });

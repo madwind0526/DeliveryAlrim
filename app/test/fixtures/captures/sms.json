@@ -13,7 +13,8 @@
       "trackingNumber": "300211029394",
       "status": "delivered",
       "productName": "( 10 ) [11116]온라인) 라이트스탠다드참치 85g^( 2 ) [11150]온라인) 고추참치 85g",
-      "mallName": "복지몰"
+      "mallName": "복지몰",
+      "arrivalOffsetDays": 0
     }
   },
   {
@@ -29,7 +30,8 @@
       "courierCode": "hanjin",
       "trackingNumber": "512345678901",
       "status": "out_for_delivery",
-      "productName": "캠핑 접이식 의자 2개 세트"
+      "productName": "캠핑 접이식 의자 2개 세트",
+      "arrivalOffsetDays": 0
     }
   },
   {
@@ -45,7 +47,8 @@
       "courierCode": "epost",
       "trackingNumber": "6912345678901",
       "status": "out_for_delivery",
-      "productName": "제주 감귤 5kg"
+      "productName": "제주 감귤 5kg",
+      "arrivalOffsetDays": 0
     }
   },
   {
@@ -61,7 +64,8 @@
       "courierCode": "logen",
       "trackingNumber": "12345678901",
       "status": "in_transit",
-      "productName": "프린터 토너 2개"
+      "productName": "프린터 토너 2개",
+      "arrivalOffsetDays": null
     }
   },
   {

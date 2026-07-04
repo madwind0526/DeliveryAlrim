@@ -120,6 +120,7 @@ class _ParcelCard extends StatelessWidget {
 
     return Card(
       child: ListTile(
+        onTap: () => context.push('/parcel/${parcel.id}'),
         title: Text(
           parcel.productName ?? StringsKo.unknownProduct,
           maxLines: 1,

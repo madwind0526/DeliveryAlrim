@@ -37,6 +37,30 @@ flutter_localizations:
 intl: any
 ```
 
+## drift 이벤트 정렬 테스트에서 동일 타임스탬프 함정
+
+### 증상
+
+`orderBy desc(eventTime)` 스트림 테스트에서 기대 순서와 다른 행이 first로 나옴.
+
+### 원인
+
+테스트 헬퍼가 모든 행에 같은 `DateTime`을 넣어 정렬 키가 동률 → SQLite가 임의 순서 반환.
+
+### 해결
+
+테스트 데이터에 시간 오프셋을 명시적으로 다르게 부여한다 (`DateTime(2026,7,4,9)`, `...,10)`, `...,11)`).
+
+## table_calendar 한국어 로케일
+
+### 증상/주의
+
+`locale: 'ko_KR'` 지정 시 intl 데이터가 'ko'만 초기화되어 있으면 위험.
+
+### 해결
+
+`initializeDateFormatting('ko')` + `TableCalendar(locale: 'ko')`로 통일하면 안전. intl fallback은 'ko_KR'→'ko' 방향만 동작한다.
+
 <!-- 예시 형식:
 
 ## [문제 제목]

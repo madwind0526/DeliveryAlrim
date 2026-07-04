@@ -40,6 +40,13 @@ class RuleEngine {
     (RegExp(r'주문\s*완료|결제\s*완료|접수'), ParcelStatus.registered),
   ];
 
+  /// Arrival-day hints ('오늘/금일/내일 도착·배달·배송') → day offset
+  /// from the capture time. Checked before status-based fallbacks.
+  static final List<(RegExp, int)> _arrivalHints = [
+    (RegExp(r'(오늘|금일)\s*(중\s*)?(도착|배달|배송)'), 0),
+    (RegExp(r'내일\s*(중\s*)?(도착|배달|배송)'), 1),
+  ];
+
   static final _productRe = RegExp(r'상품명\s*[:：]\s*([^\n]+)');
   static final _mallRe = RegExp(r'보내는분\s*[:：]\s*([^\n]+)');
   static final _coupangOrderRe = RegExp(r'주문번호\s*[:：]?\s*(\d{6,20})');
@@ -72,12 +79,14 @@ class RuleEngine {
         continue;
       }
 
+      final status = _resolveStatus(rule, text);
       return ParseResult.success(ExtractedParcel(
         courierCode: courierCode,
         trackingNumber: invoice,
-        status: _resolveStatus(rule, text),
+        status: status,
         productName: _extractProduct(rule, text),
         mallName: _firstGroup(_mallRe, text),
+        expectedArrivalDate: _extractArrival(text, capture.capturedAt, status),
         matchedRuleId: rule.id,
       ));
     }
@@ -120,14 +129,30 @@ class RuleEngine {
     }
     final key = 'cp:${sha1.convert(utf8.encode(seed))}';
 
+    final status = _resolveStatus(rule, text);
     return ExtractedParcel(
       courierCode: Couriers.coupangDirect.code,
       trackingNumber: key,
-      status: _resolveStatus(rule, text),
+      status: status,
       productName: product,
       mallName: '쿠팡',
+      expectedArrivalDate: _extractArrival(text, capture.capturedAt, status),
       matchedRuleId: rule.id,
     );
+  }
+
+  DateTime? _extractArrival(
+      String text, DateTime capturedAt, ParcelStatus status) {
+    final day = DateTime(capturedAt.year, capturedAt.month, capturedAt.day);
+    for (final (re, offset) in _arrivalHints) {
+      if (re.hasMatch(text)) return day.add(Duration(days: offset));
+    }
+    // Out-for-delivery implies arrival today; delivered pins the day.
+    if (status == ParcelStatus.outForDelivery ||
+        status == ParcelStatus.delivered) {
+      return day;
+    }
+    return null;
   }
 
   ParcelStatus _resolveStatus(ParseRule rule, String text) {

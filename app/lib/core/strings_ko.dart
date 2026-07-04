@@ -23,6 +23,27 @@ abstract final class StringsKo {
   static const arrivalToday = '오늘 도착 예정';
   static const arrivalTomorrow = '내일 도착 예정';
 
+  // Navigation
+  static const navParcels = '배송';
+  static const navCalendar = '캘린더';
+
+  // Parcel detail
+  static const detailTitle = '배송 상세';
+  static const timelineTitle = '배송 이력';
+  static const noEvents = '이력이 없습니다';
+  static const channelsHeader = '수집 채널';
+  static const parcelNotFound = '배송 정보를 찾을 수 없습니다';
+  static const deleteParcel = '삭제';
+  static const deleteConfirmTitle = '배송 삭제';
+  static const deleteConfirmBody = '이 배송을 목록에서 삭제할까요?';
+  static const cancel = '취소';
+
+  // Calendar
+  static const calendarTitle = '배송 캘린더';
+  static const dayEmpty = '이 날짜의 배송이 없습니다';
+  static const expectedBadge = '도착 예정';
+  static const deliveredBadge = '배달완료';
+
   // Debug replay (parse injection)
   static const replayTitle = '알림 주입 테스트 (디버그)';
   static const channelLabel = '채널';

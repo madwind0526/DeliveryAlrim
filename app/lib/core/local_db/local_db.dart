@@ -30,6 +30,17 @@ class ParcelRows extends Table {
       ];
 }
 
+/// Per-parcel status history shown on the detail timeline.
+/// Mirrors the future Supabase `tracking_events` table.
+class TrackingEventRows extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get parcelId => text()();
+  DateTimeColumn get eventTime => dateTime()();
+  TextColumn get statusCode => text()();
+  TextColumn get location => text().nullable()();
+  TextColumn get description => text().nullable()();
+}
+
 /// Single-row local profile used by the PC-mode fake auth.
 class LocalProfileRows extends Table {
   IntColumn get id => integer()();
@@ -40,7 +51,7 @@ class LocalProfileRows extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-@DriftDatabase(tables: [ParcelRows, LocalProfileRows])
+@DriftDatabase(tables: [ParcelRows, LocalProfileRows, TrackingEventRows])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
@@ -48,7 +59,16 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.connection);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+        onUpgrade: (m, from, to) async {
+          if (from < 2) {
+            await m.createTable(trackingEventRows);
+          }
+        },
+      );
 
   static QueryExecutor _openConnection() {
     // drift_flutter picks the right sqlite3 setup per platform
