@@ -18,10 +18,14 @@ class UserSourcesScreen extends ConsumerStatefulWidget {
 class _UserSourcesScreenState extends ConsumerState<UserSourcesScreen> {
   bool _emailEnabled = false;
   bool _otherEmailEnabled = false;
+  bool _otherEmailVisible = false;
   bool _smsEnabled = false;
+  bool _smsVisible = false;
   bool _kakaoEnabled = true;
   bool _telegramEnabled = false;
+  bool _telegramVisible = false;
   bool _whatsappEnabled = false;
+  bool _whatsappVisible = false;
   bool _syncingKakao = false;
   bool _sendingTest = false;
   Set<CredentialSource> _storedCredentials = {};
@@ -50,6 +54,9 @@ class _UserSourcesScreenState extends ConsumerState<UserSourcesScreen> {
         if (entries[3] != null) CredentialSource.telegram,
         if (entries[4] != null) CredentialSource.whatsapp,
       };
+      _otherEmailVisible = entries[1] != null;
+      _telegramVisible = entries[3] != null;
+      _whatsappVisible = entries[4] != null;
     });
   }
 
@@ -191,7 +198,10 @@ class _UserSourcesScreenState extends ConsumerState<UserSourcesScreen> {
                 label: '기타 이메일',
                 icon: Icons.alternate_email,
                 credentialSource: CredentialSource.otherEmail,
-                enable: () => _otherEmailEnabled = true,
+                enable: () {
+                  _otherEmailVisible = true;
+                  _otherEmailEnabled = true;
+                },
               ),
             ]),
           ),
@@ -205,16 +215,17 @@ class _UserSourcesScreenState extends ConsumerState<UserSourcesScreen> {
             onCredentialPressed: () =>
                 _openCredentialDialog(CredentialSource.gmail, 'Gmail'),
           ),
-          _SwitchRow(
-            label: '기타 이메일',
-            value: _otherEmailEnabled,
-            onChanged: (value) => setState(() => _otherEmailEnabled = value),
-            credentialStored: _storedCredentials.contains(
-              CredentialSource.otherEmail,
+          if (_otherEmailVisible)
+            _SwitchRow(
+              label: '기타 이메일',
+              value: _otherEmailEnabled,
+              onChanged: (value) => setState(() => _otherEmailEnabled = value),
+              credentialStored: _storedCredentials.contains(
+                CredentialSource.otherEmail,
+              ),
+              onCredentialPressed: () =>
+                  _openCredentialDialog(CredentialSource.otherEmail, '기타 이메일'),
             ),
-            onCredentialPressed: () =>
-                _openCredentialDialog(CredentialSource.otherEmail, '기타 이메일'),
-          ),
           const SizedBox(height: 12),
           _SectionHeader(
             title: StringsKo.userSmsSection,
@@ -224,15 +235,19 @@ class _UserSourcesScreenState extends ConsumerState<UserSourcesScreen> {
               _SourceOption(
                 label: 'SMS',
                 icon: Icons.sms_outlined,
-                enable: () => _smsEnabled = true,
+                enable: () {
+                  _smsVisible = true;
+                  _smsEnabled = true;
+                },
               ),
             ]),
           ),
-          _SwitchRow(
-            label: 'SMS',
-            value: _smsEnabled,
-            onChanged: (value) => setState(() => _smsEnabled = value),
-          ),
+          if (_smsVisible)
+            _SwitchRow(
+              label: 'SMS',
+              value: _smsEnabled,
+              onChanged: (value) => setState(() => _smsEnabled = value),
+            ),
           _SourceTestPanel(
             sending: _sendingTest,
             onSendGmail: () => _sendTest(CaptureTestSamples.gmail),
@@ -254,13 +269,19 @@ class _UserSourcesScreenState extends ConsumerState<UserSourcesScreen> {
                 label: '텔레그램',
                 icon: Icons.send_outlined,
                 credentialSource: CredentialSource.telegram,
-                enable: () => _telegramEnabled = true,
+                enable: () {
+                  _telegramVisible = true;
+                  _telegramEnabled = true;
+                },
               ),
               _SourceOption(
                 label: 'WhatsApp',
                 icon: Icons.forum_outlined,
                 credentialSource: CredentialSource.whatsapp,
-                enable: () => _whatsappEnabled = true,
+                enable: () {
+                  _whatsappVisible = true;
+                  _whatsappEnabled = true;
+                },
               ),
             ]),
           ),
@@ -274,26 +295,28 @@ class _UserSourcesScreenState extends ConsumerState<UserSourcesScreen> {
             onCredentialPressed: () =>
                 _openCredentialDialog(CredentialSource.kakao, '카카오톡'),
           ),
-          _SwitchRow(
-            label: '텔레그램',
-            value: _telegramEnabled,
-            onChanged: (value) => setState(() => _telegramEnabled = value),
-            credentialStored: _storedCredentials.contains(
-              CredentialSource.telegram,
+          if (_telegramVisible)
+            _SwitchRow(
+              label: '텔레그램',
+              value: _telegramEnabled,
+              onChanged: (value) => setState(() => _telegramEnabled = value),
+              credentialStored: _storedCredentials.contains(
+                CredentialSource.telegram,
+              ),
+              onCredentialPressed: () =>
+                  _openCredentialDialog(CredentialSource.telegram, '텔레그램'),
             ),
-            onCredentialPressed: () =>
-                _openCredentialDialog(CredentialSource.telegram, '텔레그램'),
-          ),
-          _SwitchRow(
-            label: 'WhatsApp',
-            value: _whatsappEnabled,
-            onChanged: (value) => setState(() => _whatsappEnabled = value),
-            credentialStored: _storedCredentials.contains(
-              CredentialSource.whatsapp,
+          if (_whatsappVisible)
+            _SwitchRow(
+              label: 'WhatsApp',
+              value: _whatsappEnabled,
+              onChanged: (value) => setState(() => _whatsappEnabled = value),
+              credentialStored: _storedCredentials.contains(
+                CredentialSource.whatsapp,
+              ),
+              onCredentialPressed: () =>
+                  _openCredentialDialog(CredentialSource.whatsapp, 'WhatsApp'),
             ),
-            onCredentialPressed: () =>
-                _openCredentialDialog(CredentialSource.whatsapp, 'WhatsApp'),
-          ),
           Align(
             alignment: Alignment.centerLeft,
             child: FilledButton.icon(

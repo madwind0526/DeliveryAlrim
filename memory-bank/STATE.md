@@ -35,7 +35,7 @@
 - Android 네이티브 SQLite 직접 저장 검증: logcat `persisted capture to local sqlite invoice=594239221744`, DB `parcel_rows` 1건 유지 확인.
 - Flutter 앱 시작/복귀 및 User 화면 `카카오톡 동기화` 버튼에서 SharedPreferences 최신 캡처를 DB로 backfill한다.
 - Windows에서 먼저 검증하고 Android로 확장한다.
-- User 화면은 이메일/문자/SNS 모니터링 섹션을 구분해 표시하고, 소스 행은 `Gmail`, `SMS`, `카카오톡`처럼 이름만 표시한다.
+- User 화면은 이메일/문자/SNS 모니터링 섹션을 구분해 표시한다. 초기 기본 소스는 `Gmail`, `카카오톡`만 보이고, 기타 이메일/SMS/텔레그램/WhatsApp은 `추가` 버튼으로 선택한 뒤 표시한다.
 - Gmail/SMS 자동 주입 버튼은 앱 내부 샘플을 생성해 `RuleEngine → ParcelRepository` 경로로 배송 DB에 등록한다.
 - Android 실기기 검증: `Gmail 샘플 보내기`, `SMS 샘플 보내기` 실행 후 DB에 `cj / 641234567893 / gmail`, `hanjin / 512345678901 / sms`가 등록됨.
 - 로그인/모니터링 관리는 소스 프로필 단위로 묶고, 비밀값은 SQLite가 아니라 Android Keystore/secure storage에 저장한다.
