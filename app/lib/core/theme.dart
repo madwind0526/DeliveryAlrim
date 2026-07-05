@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import 'system_user_font.dart';
+
 /// App-wide dark theme. Accent colors match the existing desktop-tools
 /// design system (#7c6af7 accent, #f87171 danger, #4ade80 success).
 abstract final class AppTheme {
@@ -17,12 +19,11 @@ abstract final class AppTheme {
       cardTheme: const CardThemeData(
         margin: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       ),
-      fontFamily: _systemFontFamily,
+      fontFamily: SystemUserFont.activeFamily ?? _systemFontFamily,
     );
   }
 
   static String? get _systemFontFamily => switch (defaultTargetPlatform) {
-    TargetPlatform.android => 'sans-serif',
     TargetPlatform.windows => 'Segoe UI',
     TargetPlatform.macOS => '.AppleSystemUIFont',
     TargetPlatform.iOS => '.SF Pro Text',

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/adaptive_text.dart';
 import '../../core/constants/couriers.dart';
 import '../../core/providers.dart';
 import '../../core/strings_ko.dart';
@@ -18,7 +19,7 @@ class TodayDashboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final parcelsAsync = ref.watch(todayParcelsProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text(StringsKo.todaySummaryTitle)),
+      appBar: AppBar(title: const AdaptiveText(StringsKo.todaySummaryTitle)),
       body: parcelsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('$e')),
@@ -180,16 +181,15 @@ class _SummaryItem extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
+              AdaptiveText(
                 '$value',
                 style: Theme.of(
                   context,
                 ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 2),
-              Text(
+              AdaptiveText(
                 label,
-                maxLines: 1,
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                   color: colors.onSurfaceVariant,
                 ),
@@ -225,10 +225,8 @@ class _TodaySection extends StatelessWidget {
               Icon(icon, size: 18),
               const SizedBox(width: 8),
               Expanded(
-                child: Text(
+                child: AdaptiveText(
                   '$title ${parcels.length}',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
               ),
@@ -265,19 +263,13 @@ class _TodayParcelTile extends StatelessWidget {
     return Card(
       child: ListTile(
         onTap: () => context.push('/parcel/${parcel.id}'),
-        title: Text(
-          parcel.productName ?? StringsKo.unknownProduct,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        subtitle: Text(
+        title: AdaptiveText(parcel.productName ?? StringsKo.unknownProduct),
+        subtitle: AdaptiveText(
           [
             courierName,
             if (parcel.mallName != null) parcel.mallName!,
             if (!parcel.trackingNumber.startsWith('cp:')) parcel.trackingNumber,
           ].join(' · '),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
         ),
         trailing: Chip(
           label: Text(

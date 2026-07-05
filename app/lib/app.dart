@@ -56,6 +56,21 @@ class _CheckShippingAppState extends ConsumerState<CheckShippingApp>
       debugShowCheckedModeBanner: false,
       theme: AppTheme.dark(),
       routerConfig: router,
+      builder: (context, child) {
+        final media = MediaQuery.of(context);
+        final shortestSide = media.size.shortestSide;
+        final maxScale = shortestSide < 360
+            ? 1.0
+            : shortestSide < 420
+            ? 1.12
+            : 1.2;
+        final currentScale = media.textScaler.scale(1);
+        final scale = currentScale > maxScale ? maxScale : currentScale;
+        return MediaQuery(
+          data: media.copyWith(textScaler: TextScaler.linear(scale)),
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
       locale: const Locale('ko'),
       supportedLocales: const [Locale('ko'), Locale('en')],
       localizationsDelegates: const [

@@ -49,6 +49,13 @@
 
          In particular, this is used by the Flutter engine in io.flutter.plugin.text.ProcessTextPlugin. -->
     <queries>
+        <package android:name="com.monotype.android.font.chococooky" />
+        <package android:name="com.monotype.android.font.applemint" />
+        <package android:name="com.monotype.android.font.cooljazz" />
+        <package android:name="com.monotype.android.font.tinkerbell" />
+        <package android:name="com.monotype.android.font.sdmisaeng" />
+        <package android:name="com.monotype.android.font.samsungone" />
+        <package android:name="com.monotype.android.font.samsungsans" />
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>

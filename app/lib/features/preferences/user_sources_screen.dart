@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/adaptive_text.dart';
 import '../../core/strings_ko.dart';
 import '../capture/kakao_capture_sync.dart';
 
@@ -39,7 +40,7 @@ class _UserSourcesScreenState extends ConsumerState<UserSourcesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text(StringsKo.userTitle)),
+      appBar: AppBar(title: const AdaptiveText(StringsKo.userTitle)),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -49,8 +50,8 @@ class _UserSourcesScreenState extends ConsumerState<UserSourcesScreen> {
             onPressed: () {},
           ),
           SwitchListTile(
-            title: const Text('Gmail'),
-            subtitle: Text(
+            title: const AdaptiveText('Gmail'),
+            subtitle: AdaptiveText(
               _emailEnabled
                   ? StringsKo.sourceEnabled
                   : StringsKo.sourceDisabled,
@@ -65,8 +66,8 @@ class _UserSourcesScreenState extends ConsumerState<UserSourcesScreen> {
             onPressed: () {},
           ),
           SwitchListTile(
-            title: const Text('카카오톡'),
-            subtitle: Text(
+            title: const AdaptiveText('카카오톡'),
+            subtitle: AdaptiveText(
               _kakaoEnabled
                   ? StringsKo.sourceEnabled
                   : StringsKo.sourceDisabled,
@@ -84,11 +85,11 @@ class _UserSourcesScreenState extends ConsumerState<UserSourcesScreen> {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.sync),
-              label: const Text(StringsKo.userKakaoSync),
+              label: const AdaptiveText(StringsKo.userKakaoSync),
             ),
           ),
           SwitchListTile(
-            title: const Text(StringsKo.userSecureStorage),
+            title: const AdaptiveText(StringsKo.userSecureStorage),
             value: _secureStorage,
             onChanged: (value) => setState(() => _secureStorage = value),
           ),
@@ -114,12 +115,15 @@ class _SectionHeader extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: Text(title, style: Theme.of(context).textTheme.titleMedium),
+          child: AdaptiveText(
+            title,
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
         ),
         TextButton.icon(
           onPressed: onPressed,
           icon: const Icon(Icons.add),
-          label: Text(actionLabel),
+          label: AdaptiveText(actionLabel),
         ),
       ],
     );
