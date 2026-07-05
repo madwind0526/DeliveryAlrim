@@ -11,6 +11,7 @@
 - 캡처 결과는 네이티브 SharedPreferences와 `app_flutter/check_shipping.sqlite`에 즉시 저장됨
 - Flutter 앱 시작/복귀 및 User 화면 `카카오톡 동기화` 버튼에서 최신 캡처를 DB로 backfill함
 - `일별`은 캘린더가 아니라 오늘 기준 주문/준비, 배달 중, 오늘 배달 예정 현황 화면으로 사용함
+- 화면 폭/사용자 글자 크기/사용자 선택 폰트를 반영하는 반응형 텍스트 정책과 Samsung FlipFont 로딩을 적용함
 - 다음: SMS/이메일 입력 경로, 계정 정보 암호화 저장, 배터리 최적화/릴리즈 APK 하드닝
 
 <!-- 

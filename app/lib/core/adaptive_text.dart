@@ -16,17 +16,23 @@ class AdaptiveText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FittedBox(
-      fit: BoxFit.scaleDown,
-      alignment: alignment,
-      child: Text(
-        data,
-        maxLines: 1,
-        softWrap: false,
-        overflow: TextOverflow.visible,
-        textAlign: textAlign,
-        style: style,
-      ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final text = Text(
+          data,
+          maxLines: 1,
+          softWrap: false,
+          overflow: TextOverflow.visible,
+          textAlign: textAlign,
+          style: style,
+        );
+        if (!constraints.hasBoundedWidth) return text;
+        return FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: alignment,
+          child: text,
+        );
+      },
     );
   }
 }

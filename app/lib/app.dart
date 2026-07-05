@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/router.dart';
+import 'core/responsive_text_policy.dart';
 import 'core/strings_ko.dart';
 import 'core/theme.dart';
 import 'features/capture/kakao_capture_sync.dart';
@@ -58,16 +59,10 @@ class _CheckShippingAppState extends ConsumerState<CheckShippingApp>
       routerConfig: router,
       builder: (context, child) {
         final media = MediaQuery.of(context);
-        final shortestSide = media.size.shortestSide;
-        final maxScale = shortestSide < 360
-            ? 1.0
-            : shortestSide < 420
-            ? 1.12
-            : 1.2;
-        final currentScale = media.textScaler.scale(1);
-        final scale = currentScale > maxScale ? maxScale : currentScale;
         return MediaQuery(
-          data: media.copyWith(textScaler: TextScaler.linear(scale)),
+          data: media.copyWith(
+            textScaler: ResponsiveTextPolicy.scalerFor(media),
+          ),
           child: child ?? const SizedBox.shrink(),
         );
       },

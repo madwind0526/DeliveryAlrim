@@ -11,6 +11,7 @@ import '../features/preferences/settings_screen.dart';
 import '../features/preferences/user_sources_screen.dart';
 import '../features/parcels/parcel_detail_screen.dart';
 import '../features/parcels/parcel_list_screen.dart';
+import 'adaptive_text.dart';
 import 'app_info.dart';
 import 'strings_ko.dart';
 
@@ -171,18 +172,23 @@ class _AppHeader extends ConsumerWidget {
         ),
         child: Row(
           children: [
-            Text(
-              StringsKo.appTitle,
-              style: Theme.of(
-                context,
-              ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+            Flexible(
+              flex: 2,
+              child: AdaptiveText(
+                StringsKo.appTitle,
+                style: Theme.of(
+                  context,
+                ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+              ),
             ),
             const SizedBox(width: 8),
-            Text(
-              '빌드 $version',
-              style: Theme.of(
-                context,
-              ).textTheme.labelMedium?.copyWith(color: colors.onSurfaceVariant),
+            Flexible(
+              child: AdaptiveText(
+                '빌드 $version',
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  color: colors.onSurfaceVariant,
+                ),
+              ),
             ),
           ],
         ),

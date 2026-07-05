@@ -52,10 +52,8 @@ class MainActivity : FlutterActivity() {
             7 -> "com.monotype.android.font.sdmisaeng"
             else -> null
         }
-        val candidates = listOfNotNull(
-            selected,
-            "com.monotype.android.font.chococooky".takeIf { selected != "com.monotype.android.font.chococooky" },
-        )
+        val candidates = (listOfNotNull(selected) + FLIP_FONT_PACKAGES)
+            .distinct()
         for (packageName in candidates) {
             val bytes = readFirstFontAsset(packageName)
             if (bytes != null) return bytes
@@ -108,5 +106,16 @@ class MainActivity : FlutterActivity() {
     companion object {
         private const val CHANNEL = "check_shipping/kakao_capture"
         private const val PREFS = "kakao_accessibility"
+        private val FLIP_FONT_PACKAGES = listOf(
+            "com.monotype.android.font.samsungone",
+            "com.monotype.android.font.samsungsans",
+            "com.monotype.android.font.applemint",
+            "com.monotype.android.font.cooljazz",
+            "com.monotype.android.font.chococooky",
+            "com.monotype.android.font.tinkerbell",
+            "com.monotype.android.font.sdmisaeng",
+            "com.monotype.android.font.foundation",
+            "com.monotype.android.font.roboto",
+        )
     }
 }
