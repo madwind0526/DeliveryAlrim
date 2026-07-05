@@ -129,6 +129,44 @@ class _UserSourcesScreenState extends ConsumerState<UserSourcesScreen> {
     );
   }
 
+  Future<void> _openAddSourceDialog(List<_SourceOption> options) async {
+    final option = await showDialog<_SourceOption>(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: const AdaptiveText(StringsKo.addSourceTitle),
+        children: [
+          for (final option in options)
+            SimpleDialogOption(
+              onPressed: () => Navigator.of(context).pop(option),
+              child: Row(
+                children: [
+                  Icon(option.icon),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: AdaptiveText(
+                      option.label,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+    if (option == null) return;
+    if (!mounted) return;
+
+    setState(option.enable);
+    if (option.credentialSource == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text(StringsKo.sourceAddedSnack)));
+      return;
+    }
+    await _openCredentialDialog(option.credentialSource!, option.label);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -142,7 +180,20 @@ class _UserSourcesScreenState extends ConsumerState<UserSourcesScreen> {
             title: StringsKo.userEmailSection,
             icon: Icons.mail_outline,
             actionLabel: StringsKo.addSource,
-            onPressed: () {},
+            onPressed: () => _openAddSourceDialog([
+              _SourceOption(
+                label: 'Gmail',
+                icon: Icons.mail_outline,
+                credentialSource: CredentialSource.gmail,
+                enable: () => _emailEnabled = true,
+              ),
+              _SourceOption(
+                label: '기타 이메일',
+                icon: Icons.alternate_email,
+                credentialSource: CredentialSource.otherEmail,
+                enable: () => _otherEmailEnabled = true,
+              ),
+            ]),
           ),
           _SwitchRow(
             label: 'Gmail',
@@ -169,7 +220,13 @@ class _UserSourcesScreenState extends ConsumerState<UserSourcesScreen> {
             title: StringsKo.userSmsSection,
             icon: Icons.sms_outlined,
             actionLabel: StringsKo.addSource,
-            onPressed: () {},
+            onPressed: () => _openAddSourceDialog([
+              _SourceOption(
+                label: 'SMS',
+                icon: Icons.sms_outlined,
+                enable: () => _smsEnabled = true,
+              ),
+            ]),
           ),
           _SwitchRow(
             label: 'SMS',
@@ -186,7 +243,26 @@ class _UserSourcesScreenState extends ConsumerState<UserSourcesScreen> {
             title: StringsKo.userSnsSection,
             icon: Icons.chat_bubble_outline,
             actionLabel: StringsKo.addSource,
-            onPressed: () {},
+            onPressed: () => _openAddSourceDialog([
+              _SourceOption(
+                label: '카카오톡',
+                icon: Icons.chat_bubble_outline,
+                credentialSource: CredentialSource.kakao,
+                enable: () => _kakaoEnabled = true,
+              ),
+              _SourceOption(
+                label: '텔레그램',
+                icon: Icons.send_outlined,
+                credentialSource: CredentialSource.telegram,
+                enable: () => _telegramEnabled = true,
+              ),
+              _SourceOption(
+                label: 'WhatsApp',
+                icon: Icons.forum_outlined,
+                credentialSource: CredentialSource.whatsapp,
+                enable: () => _whatsappEnabled = true,
+              ),
+            ]),
           ),
           _SwitchRow(
             label: '카카오톡',
@@ -235,6 +311,20 @@ class _UserSourcesScreenState extends ConsumerState<UserSourcesScreen> {
       ),
     );
   }
+}
+
+class _SourceOption {
+  final String label;
+  final IconData icon;
+  final CredentialSource? credentialSource;
+  final VoidCallback enable;
+
+  const _SourceOption({
+    required this.label,
+    required this.icon,
+    required this.enable,
+    this.credentialSource,
+  });
 }
 
 class _CredentialNotice extends StatelessWidget {

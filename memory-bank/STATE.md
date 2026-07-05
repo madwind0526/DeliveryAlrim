@@ -3,9 +3,9 @@
 ## Current Wave
 
 - **Wave:** 5
-- **Status:** Wave 6 in progress (Gmail/SMS 자동 주입 테스트와 secure storage 로그인 저장 골격 완료, 실제 계정/권한 연결 남음)
+- **Status:** Wave 6 in progress (User 소스 추가/secure storage 로그인 저장 골격 완료, 실제 계정/권한 연결 남음)
 - **Cache Status:** CLEAN
-- **Last Checkpoint:** 2026-07-06 Wave 6 secure storage 로그인 관리 골격 빌드 검증
+- **Last Checkpoint:** 2026-07-06 Wave 6 User 소스 추가 버튼 실기기 검증
 
 ## Wave History
 
@@ -41,3 +41,5 @@
 - 로그인/모니터링 관리는 소스 프로필 단위로 묶고, 비밀값은 SQLite가 아니라 Android Keystore/secure storage에 저장한다.
 - Google Play Store 배포는 현재 목표가 아니며, 모니터링 앱 로그인/token/API key는 사용자가 끄는 옵션 없이 항상 로컬 secure storage에 저장한다.
 - User 화면에서 `암호화 저장` 스위치를 제거하고 Gmail/카카오톡 로그인 정보 관리 다이얼로그와 secure storage `CredentialStore` 골격을 추가했다.
+- 이메일/SNS `추가` 버튼은 소스 선택 다이얼로그를 열고, 선택한 소스를 켠 뒤 로그인 정보 입력으로 이어진다.
+- Android 실기기에서 이메일 `추가` 버튼이 `Gmail`, `기타 이메일` 선택 다이얼로그를 여는 것을 확인했다. 사용자는 Gmail/카카오톡 계정 정보를 입력 완료했다.

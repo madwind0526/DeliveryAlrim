@@ -8,9 +8,10 @@
 - 핵심 수집 구조: 알림은 trigger + hint이고, 실제 배송 DB는 채널별 본문 획득 후 생성
 - 카카오톡 삼성카드/CJ대한통운 접근성 캡처와 네이티브 SQLite 즉시 저장은 실기기 검증 완료
 - Gmail/SMS 샘플 자동 주입 테스트가 User 화면과 디버그 주입 화면에서 같은 `RuleEngine → ParcelRepository` 경로로 동작함
-- User 화면은 이메일/문자/SNS 모니터링 섹션과 소스명만 표시하는 단순 행 구조
+- User 화면은 이메일/문자/SNS 모니터링 섹션과 소스명만 표시하는 단순 행 구조이며, `추가` 버튼은 소스 선택 후 로그인 정보 입력으로 이어짐
 - Play Store 배포는 현재 목표가 아니며, 모니터링 앱 로그인 정보는 로컬 secure storage에 항상 암호화 저장
-- 다음: 실제 Gmail OAuth/IMAP 연결, Android SMS 권한/수신 연결, 배터리 최적화/릴리즈 APK 하드닝
+- Gmail/카카오톡 계정 정보는 사용자가 앱에서 입력 완료
+- 다음: 실제 Gmail OAuth/IMAP 연결, Android SMS 권한/수신 연결, 카카오톡 계정 활용 범위 정리, 배터리 최적화/릴리즈 APK 하드닝
 
 <!-- 
 규칙:
