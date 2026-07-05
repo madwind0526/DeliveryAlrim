@@ -6,6 +6,8 @@ import '../../core/providers.dart';
 import '../../core/strings_ko.dart';
 import '../capture/capture_models.dart';
 import '../capture/rules_provider.dart';
+import 'capture_test_runner.dart';
+import 'capture_test_samples.dart';
 
 /// Debug-only injection screen: paste any notification/SMS/email text,
 /// run the rule engine, inspect the result, and optionally register it.
@@ -28,6 +30,7 @@ class _ReplayScreenState extends ConsumerState<ReplayScreen> {
   RawCapture? _lastCapture;
   ParseResult? _lastResult;
   bool _registered = false;
+  bool _sendingTest = false;
 
   @override
   void dispose() {
@@ -79,6 +82,39 @@ class _ReplayScreenState extends ConsumerState<ReplayScreen> {
     ).showSnackBar(const SnackBar(content: Text(StringsKo.registeredSnack)));
   }
 
+  Future<void> _sendTest(CaptureTestSample sample) async {
+    if (_sendingTest) return;
+    setState(() => _sendingTest = true);
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final outcome = await ref.read(captureTestRunnerProvider).send(sample);
+      final capture = outcome.capture;
+      _channel = capture.channel;
+      _packageController.text = capture.packageName ?? '';
+      _senderController.text = capture.sender ?? '';
+      _titleController.text = capture.title ?? '';
+      _bodyController.text = capture.body;
+
+      if (!mounted) return;
+      setState(() {
+        _lastCapture = capture;
+        _lastResult = outcome.result;
+        _registered = outcome.result.matched;
+      });
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            outcome.result.matched
+                ? StringsKo.testSendRegistered
+                : StringsKo.testSendRejected,
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _sendingTest = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -91,7 +127,14 @@ class _ReplayScreenState extends ConsumerState<ReplayScreen> {
             child: ListView(
               padding: const EdgeInsets.all(16),
               children: [
+                _AutoTestPanel(
+                  sending: _sendingTest,
+                  onSendGmail: () => _sendTest(CaptureTestSamples.gmail),
+                  onSendSms: () => _sendTest(CaptureTestSamples.sms),
+                ),
+                const SizedBox(height: 16),
                 DropdownButtonFormField<CaptureChannel>(
+                  key: ValueKey(_channel),
                   initialValue: _channel,
                   decoration: const InputDecoration(
                     labelText: StringsKo.channelLabel,
@@ -165,6 +208,53 @@ class _ReplayScreenState extends ConsumerState<ReplayScreen> {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AutoTestPanel extends StatelessWidget {
+  final bool sending;
+  final VoidCallback onSendGmail;
+  final VoidCallback onSendSms;
+
+  const _AutoTestPanel({
+    required this.sending,
+    required this.onSendGmail,
+    required this.onSendSms,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              StringsKo.autoTestTitle,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                FilledButton.icon(
+                  onPressed: sending ? null : onSendGmail,
+                  icon: const Icon(Icons.mail_outline),
+                  label: const Text(StringsKo.sendGmailTest),
+                ),
+                FilledButton.tonalIcon(
+                  onPressed: sending ? null : onSendSms,
+                  icon: const Icon(Icons.sms_outlined),
+                  label: const Text(StringsKo.sendSmsTest),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );

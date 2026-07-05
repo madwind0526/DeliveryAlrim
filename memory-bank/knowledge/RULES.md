@@ -50,6 +50,12 @@
 **이유:** 앱 자체는 단일 사용자 로컬 모드이고, User 메뉴의 로그인은 Gmail/IMAP/SNS 등 외부 소스 접근 설정을 뜻한다.
 **적용 시점:** User 화면, settings schema, secure storage 연동 시.
 
+## 모니터링과 인증은 소스 프로필 단위로 묶기
+
+**규칙:** Gmail, SMS, 카카오톡 같은 소스마다 하나의 소스 프로필을 두고, 모니터링 on/off, 접근 방식, 인증 상태, 마지막 수집/테스트 결과를 함께 관리한다. OAuth token, app password, API key 등 비밀값은 SQLite에 저장하지 않고 Android Keystore/secure storage에 둔다.
+**이유:** 사용자는 "로그인 관리"와 "모니터링 관리"를 별도 개념으로 느끼지 않는다. 소스별로 연결 상태와 수집 상태를 함께 봐야 설정 실수가 줄어든다.
+**적용 시점:** Gmail/IMAP/SMS/Telegram/WhatsApp adapter, User 화면, monitor source schema 구현 시.
+
 ## 카카오톡 채널은 접근성 기반으로 수집
 
 **규칙:** 카카오톡 특정 채널 대화 읽기는 공식 API가 아니라 NotificationListenerService + AccessibilityService 조합으로 구현한다. 카카오톡 내부 DB 직접 접근은 사용하지 않는다.

@@ -126,6 +126,32 @@ User 메뉴:
 User 메뉴의 "로그인"은 외부 서비스를 읽기 위한 로그인이지, 앱 사용자를 인증하기 위한 로그인은 아니다.
 다만 SNS 로그인 정보가 있다고 해서 앱이 모든 SNS 대화 내용을 직접 읽을 수 있는 것은 아니다. 메신저류는 기본적으로 알림에 노출된 배송 관련 텍스트를 수집하고, 공식 API가 있는 채널만 별도 어댑터로 확장한다.
 
+### Source profile model
+
+로그인 관리와 모니터링 관리는 별도 화면으로 쪼개지 않고, User 메뉴의 "소스 프로필" 단위로 합친다.
+
+소스 프로필 하나는 다음 정보를 가진다.
+
+| 항목 | 예시 | 저장 위치 |
+|------|------|-----------|
+| 소스 종류 | Gmail, SMS, 카카오톡, 텔레그램 | SQLite |
+| 표시 이름 | Gmail, 개인 Gmail, 카카오톡 CJ대한통운 | SQLite |
+| 모니터링 여부 | 켬/끔 | SQLite |
+| 접근 방식 | Gmail API, IMAP, Android SMS, 알림, 접근성 | SQLite |
+| 인증 상태 | 연결됨, 필요함, 만료됨 | SQLite |
+| 인증 비밀값 | OAuth refresh token, IMAP app password, API key | Android Keystore/secure storage |
+| 마지막 수집 결과 | 성공, 실패 이유, 마지막 시간 | SQLite |
+| 테스트 결과 | 마지막 자동 테스트 성공/실패 | SQLite |
+
+채널별 권장안:
+
+- Gmail: OAuth/Gmail API를 1순위로 둔다. 개인 테스트와 간단한 계정은 IMAP app password fallback을 둘 수 있다.
+- SMS: 로그인은 없다. Android SMS 읽기 권한 또는 기본 SMS 앱 전환이 필요하므로, 개인 sideload 빌드에서 먼저 검증한다.
+- 카카오톡: 앱 안에 카카오 로그인 정보를 저장하지 않는다. 카카오톡 내부 DB를 직접 읽지 않고, 접근성 권한과 알림/화면 텍스트 캡처를 사용자 동의 기반으로 사용한다.
+- Telegram/WhatsApp: 공식 API나 Bot API처럼 허용된 경로가 있는 경우만 인증 프로필을 만든다. 일반 개인 대화 읽기는 자동 수집 대상으로 보지 않는다.
+
+자동 테스트는 소스 프로필과 같은 파이프라인을 통과해야 한다. 현재 구현은 Gmail/SMS 샘플을 앱 내부에서 `RawCapture`로 생성해 `RuleEngine → ParcelRepository`까지 자동 주입한다. 이후 실제 Gmail 전송/수신 또는 Android SMS 전송/수신이 붙더라도 테스트 결과는 같은 DB 등록 경로로 검증한다.
+
 ## 5. UI Layout
 
 기본 정보 구조는 왼쪽 메뉴 + 오른쪽 메인 윈도우다.

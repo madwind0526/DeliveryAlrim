@@ -12,7 +12,9 @@
 - Flutter 앱 시작/복귀 및 User 화면 `카카오톡 동기화` 버튼에서 최신 캡처를 DB로 backfill함
 - `일별`은 캘린더가 아니라 오늘 기준 주문/준비, 배달 중, 오늘 배달 예정 현황 화면으로 사용함
 - 화면 폭/사용자 글자 크기/사용자 선택 폰트를 반영하는 반응형 텍스트 정책과 Samsung FlipFont 로딩을 적용함
-- 다음: SMS/이메일 입력 경로, 계정 정보 암호화 저장, 배터리 최적화/릴리즈 APK 하드닝
+- Gmail/SMS 샘플 자동 주입 테스트가 User 화면과 디버그 주입 화면에서 같은 `RuleEngine → ParcelRepository` 경로로 동작함
+- User 화면은 이메일/문자/SNS 모니터링 섹션과 소스명만 표시하는 단순 행 구조로 정리됨
+- 다음: 실제 Gmail OAuth/IMAP 연결, Android SMS 권한/수신 연결, 계정 정보 secure storage, 배터리 최적화/릴리즈 APK 하드닝
 
 <!-- 
 규칙:

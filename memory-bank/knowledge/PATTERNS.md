@@ -103,6 +103,26 @@ fallbackResourceIds = [
 - Drift의 Android DateTime 저장값은 초 단위 integer라 네이티브에서도 `millis / 1000`으로 저장한다.
 - 서비스가 앱 최초 실행 전 DB를 만들 수도 있으므로 `parcel_rows`, `tracking_event_rows`, `local_profile_rows`와 `PRAGMA user_version = 2`를 함께 보장한다.
 
+## Gmail/SMS 자동 주입 테스트 러너
+
+**사용 시점:** 실제 Gmail OAuth/SMS 권한 연결 전에도 파싱 엔진과 로컬 DB 등록 경로를 자동 검증해야 할 때
+
+Gmail/SMS 테스트 버튼은 외부 앱을 직접 조작하지 않고, 앱 내부에서 동일한 `RawCapture`를 생성해 운영 파이프라인과 같은 경로를 통과시킨다.
+
+```text
+CaptureTestSample
+  → CaptureTestRunner.send()
+  → RuleEngine.parse()
+  → ParcelRepository.upsert()
+  → parcel_rows source_channels = gmail | sms
+```
+
+검증 결과:
+
+- User 화면에서 `Gmail 샘플 보내기`, `SMS 샘플 보내기` 버튼을 눌러 스낵바 성공 확인
+- Android 앱 내부 SQLite 조회 결과 `cj / 641234567893 / gmail`, `hanjin / 512345678901 / sms` 등록 확인
+- `app/test/debug/capture_test_runner_test.dart`에서 같은 경로를 in-memory DB로 자동 회귀 테스트함
+
 <!-- 예시 형식:
 
 ## [패턴 이름]

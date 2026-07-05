@@ -64,6 +64,7 @@ abstract final class StringsKo {
   static const settingAccessibility = '카카오톡 접근성 수집';
   static const userTitle = '사용자';
   static const userEmailSection = '이메일 모니터링';
+  static const userSmsSection = '문자 모니터링';
   static const userSnsSection = 'SNS 모니터링';
   static const userSecureStorage = '암호화 저장';
   static const userKakaoSync = '카카오톡 동기화';
@@ -83,6 +84,11 @@ abstract final class StringsKo {
   static const bodyLabel = '본문';
   static const bodyEmpty = '본문을 입력해 주세요';
   static const runParse = '파싱 실행';
+  static const autoTestTitle = '자동 주입 테스트';
+  static const sendGmailTest = 'Gmail 샘플 보내기';
+  static const sendSmsTest = 'SMS 샘플 보내기';
+  static const testSendRegistered = '테스트 배송을 등록했습니다';
+  static const testSendRejected = '테스트 샘플을 배송으로 인식하지 못했습니다';
   static const parseMatched = '인식 성공';
   static const parseRejected = '인식 실패';
   static const matchedRuleLabel = '규칙';

@@ -3,9 +3,9 @@
 ## Current Wave
 
 - **Wave:** 5
-- **Status:** Wave 5 complete (카카오톡 접근성 캡처가 로컬 SQLite DB까지 백그라운드 저장됨)
+- **Status:** Wave 6 in progress (Gmail/SMS 자동 주입 테스트와 소스 프로필 설계 완료, 실제 계정/권한 연결 남음)
 - **Cache Status:** CLEAN
-- **Last Checkpoint:** 2026-07-05 Wave 5 Android DB 브리지 검증
+- **Last Checkpoint:** 2026-07-06 Wave 6 Gmail/SMS 자동 주입 테스트 실기기 DB 검증
 
 ## Wave History
 
@@ -17,7 +17,7 @@
 | 3 | 상세 타임라인 + 일별/월별 캘린더 + 도착일 휴리스틱 + 하단 내비 | Done |
 | 4 | Supabase 제거 + 로그인 제거 + 로컬 단일 사용자 모드 + 좌측 메뉴 UI | Done |
 | 5 | Android 실기기: 카카오톡 접근성 캡처 + Flutter/네이티브 로컬 DB 브리지 + 사용자 동기화 UI | Done |
-| 6 | 하드닝: SMS/이메일 입력, 계정 정보 암호화 저장, 배터리 최적화, 로컬 알림, 릴리즈 APK | Planned |
+| 6 | 하드닝: SMS/이메일 입력, 계정 정보 암호화 저장, 배터리 최적화, 로컬 알림, 릴리즈 APK | In Progress |
 
 ## Session Notes
 
@@ -35,3 +35,7 @@
 - Android 네이티브 SQLite 직접 저장 검증: logcat `persisted capture to local sqlite invoice=594239221744`, DB `parcel_rows` 1건 유지 확인.
 - Flutter 앱 시작/복귀 및 User 화면 `카카오톡 동기화` 버튼에서 SharedPreferences 최신 캡처를 DB로 backfill한다.
 - Windows에서 먼저 검증하고 Android로 확장한다.
+- User 화면은 이메일/문자/SNS 모니터링 섹션을 구분해 표시하고, 소스 행은 `Gmail`, `SMS`, `카카오톡`처럼 이름만 표시한다.
+- Gmail/SMS 자동 주입 버튼은 앱 내부 샘플을 생성해 `RuleEngine → ParcelRepository` 경로로 배송 DB에 등록한다.
+- Android 실기기 검증: `Gmail 샘플 보내기`, `SMS 샘플 보내기` 실행 후 DB에 `cj / 641234567893 / gmail`, `hanjin / 512345678901 / sms`가 등록됨.
+- 로그인/모니터링 관리는 소스 프로필 단위로 묶고, 비밀값은 SQLite가 아니라 Android Keystore/secure storage에 저장한다.

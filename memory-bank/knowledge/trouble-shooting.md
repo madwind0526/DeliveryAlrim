@@ -75,6 +75,25 @@ PC 카카오톡 말풍선 목록이 표준 TextView/Document 아이템으로 노
 
 Windows에서는 채팅 영역 `Ctrl+A` / `Ctrl+C` 복사를 fixture 수집 fallback으로만 사용한다. 실제 Android 구현은 AccessibilityService에서 카카오톡 말풍선 노드를 직접 읽는다.
 
+## PowerShell adb exec-out PNG 리다이렉션 깨짐
+
+### 증상
+
+`adb exec-out screencap -p > user_sources.png`로 만든 파일을 이미지 뷰어가 읽지 못한다.
+
+### 원인
+
+Windows PowerShell 리다이렉션이 바이너리 PNG 스트림을 텍스트 출력처럼 다루며 파일을 손상시킬 수 있다.
+
+### 해결
+
+기기 안에 먼저 저장한 뒤 `adb pull`로 가져온다.
+
+```powershell
+adb shell screencap -p /sdcard/user_sources.png
+adb pull /sdcard/user_sources.png user_sources.png
+```
+
 <!-- 예시 형식:
 
 ## [문제 제목]
