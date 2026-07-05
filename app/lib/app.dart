@@ -53,6 +53,7 @@ class _CheckShippingAppState extends ConsumerState<CheckShippingApp>
     final router = ref.watch(routerProvider);
     return MaterialApp.router(
       title: StringsKo.appTitle,
+      debugShowCheckedModeBanner: false,
       theme: AppTheme.dark(),
       routerConfig: router,
       locale: const Locale('ko'),

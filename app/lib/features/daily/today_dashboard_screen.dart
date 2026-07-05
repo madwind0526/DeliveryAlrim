@@ -148,7 +148,7 @@ class _SummaryStrip extends StatelessWidget {
       crossAxisCount: compact ? 2 : 4,
       crossAxisSpacing: 8,
       mainAxisSpacing: 8,
-      childAspectRatio: compact ? 2.5 : 1.8,
+      childAspectRatio: compact ? 2.0 : 1.6,
       children: [
         _SummaryItem(label: StringsKo.todayOrdered, value: ordered),
         _SummaryItem(label: StringsKo.todayInTransit, value: inTransit),
@@ -169,30 +169,34 @@ class _SummaryItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       decoration: BoxDecoration(
         border: Border.all(color: colors.outlineVariant),
         borderRadius: BorderRadius.circular(8),
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            '$value',
-            style: Theme.of(
-              context,
-            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+      child: Center(
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                '$value',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                label,
+                maxLines: 1,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: colors.onSurfaceVariant,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(
-              context,
-            ).textTheme.labelSmall?.copyWith(color: colors.onSurfaceVariant),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -220,9 +224,13 @@ class _TodaySection extends StatelessWidget {
             children: [
               Icon(icon, size: 18),
               const SizedBox(width: 8),
-              Text(
-                '$title ${parcels.length}',
-                style: Theme.of(context).textTheme.titleMedium,
+              Expanded(
+                child: Text(
+                  '$title ${parcels.length}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
               ),
             ],
           ),

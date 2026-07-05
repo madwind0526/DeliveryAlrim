@@ -18,15 +18,11 @@ abstract final class AppTheme {
         margin: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       ),
       fontFamily: _systemFontFamily,
-      fontFamilyFallback: const [
-        'Noto Sans CJK KR',
-        'Apple SD Gothic Neo',
-        'Malgun Gothic',
-      ],
     );
   }
 
   static String? get _systemFontFamily => switch (defaultTargetPlatform) {
+    TargetPlatform.android => 'sans-serif',
     TargetPlatform.windows => 'Segoe UI',
     TargetPlatform.macOS => '.AppleSystemUIFont',
     TargetPlatform.iOS => '.SF Pro Text',
