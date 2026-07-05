@@ -6,15 +6,11 @@
 - Android가 실제 타깃이고 Windows는 테스트 전용
 - UI 골격: 좌측/하단 아이콘 메뉴, 업체별/오늘 현황/월별/필터/설정/사용자 화면 구현됨
 - 핵심 수집 구조: 알림은 trigger + hint이고, 실제 배송 DB는 채널별 본문 획득 후 생성
-- Android 카카오톡 삼성카드/CJ대한통운 채널 모두 `com.kakao.talk:id/alimtalk_title`에서 알림톡 본문 추출 성공
-- 접근성 서비스 `체크쉬핑 카카오톡 수집` 활성화 및 CJ대한통운 실서비스 캡처 검증 완료
-- 캡처 결과는 네이티브 SharedPreferences와 `app_flutter/check_shipping.sqlite`에 즉시 저장됨
-- Flutter 앱 시작/복귀 및 User 화면 `카카오톡 동기화` 버튼에서 최신 캡처를 DB로 backfill함
-- `일별`은 캘린더가 아니라 오늘 기준 주문/준비, 배달 중, 오늘 배달 예정 현황 화면으로 사용함
-- 화면 폭/사용자 글자 크기/사용자 선택 폰트를 반영하는 반응형 텍스트 정책과 Samsung FlipFont 로딩을 적용함
+- 카카오톡 삼성카드/CJ대한통운 접근성 캡처와 네이티브 SQLite 즉시 저장은 실기기 검증 완료
 - Gmail/SMS 샘플 자동 주입 테스트가 User 화면과 디버그 주입 화면에서 같은 `RuleEngine → ParcelRepository` 경로로 동작함
-- User 화면은 이메일/문자/SNS 모니터링 섹션과 소스명만 표시하는 단순 행 구조로 정리됨
-- 다음: 실제 Gmail OAuth/IMAP 연결, Android SMS 권한/수신 연결, 계정 정보 secure storage, 배터리 최적화/릴리즈 APK 하드닝
+- User 화면은 이메일/문자/SNS 모니터링 섹션과 소스명만 표시하는 단순 행 구조
+- Play Store 배포는 현재 목표가 아니며, 모니터링 앱 로그인 정보는 로컬 secure storage에 항상 암호화 저장
+- 다음: 실제 Gmail OAuth/IMAP 연결, Android SMS 권한/수신 연결, 배터리 최적화/릴리즈 APK 하드닝
 
 <!-- 
 규칙:

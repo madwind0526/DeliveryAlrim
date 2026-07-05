@@ -56,6 +56,12 @@
 **이유:** 사용자는 "로그인 관리"와 "모니터링 관리"를 별도 개념으로 느끼지 않는다. 소스별로 연결 상태와 수집 상태를 함께 봐야 설정 실수가 줄어든다.
 **적용 시점:** Gmail/IMAP/SMS/Telegram/WhatsApp adapter, User 화면, monitor source schema 구현 시.
 
+## 모니터링 앱 로그인 정보는 항상 암호화 저장
+
+**규칙:** Google Play Store 배포를 현재 목표로 보지 않는다. Gmail, 다른 이메일, SNS, 쇼핑몰 등 모니터링 adapter에 필요한 로그인/token/API key는 사용자가 선택하는 옵션 없이 항상 로컬 secure storage에 저장한다. 암호화 저장 on/off 체크박스는 만들지 않는다.
+**이유:** 개인용/sideload 앱에서는 앱 내부 로그인 정보를 로컬에서 관리하는 편이 자동 수집에 유리하고, 비밀값 저장 정책은 사용자가 실수로 끌 수 있는 옵션이 아니어야 한다.
+**적용 시점:** User 화면, credential store, Gmail/IMAP/SNS adapter 구현 시.
+
 ## 카카오톡 채널은 접근성 기반으로 수집
 
 **규칙:** 카카오톡 특정 채널 대화 읽기는 공식 API가 아니라 NotificationListenerService + AccessibilityService 조합으로 구현한다. 카카오톡 내부 DB 직접 접근은 사용하지 않는다.

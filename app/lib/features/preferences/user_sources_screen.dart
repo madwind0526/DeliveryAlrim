@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/adaptive_text.dart';
+import '../../core/secure_credentials.dart';
 import '../../core/strings_ko.dart';
 import '../capture/kakao_capture_sync.dart';
 import '../debug/capture_test_runner.dart';
@@ -16,11 +17,41 @@ class UserSourcesScreen extends ConsumerStatefulWidget {
 
 class _UserSourcesScreenState extends ConsumerState<UserSourcesScreen> {
   bool _emailEnabled = false;
+  bool _otherEmailEnabled = false;
   bool _smsEnabled = false;
   bool _kakaoEnabled = true;
-  bool _secureStorage = true;
+  bool _telegramEnabled = false;
+  bool _whatsappEnabled = false;
   bool _syncingKakao = false;
   bool _sendingTest = false;
+  Set<CredentialSource> _storedCredentials = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCredentialStates();
+  }
+
+  Future<void> _loadCredentialStates() async {
+    final store = ref.read(credentialStoreProvider);
+    final entries = await Future.wait([
+      store.read(CredentialSource.gmail),
+      store.read(CredentialSource.otherEmail),
+      store.read(CredentialSource.kakao),
+      store.read(CredentialSource.telegram),
+      store.read(CredentialSource.whatsapp),
+    ]);
+    if (!mounted) return;
+    setState(() {
+      _storedCredentials = {
+        if (entries[0] != null) CredentialSource.gmail,
+        if (entries[1] != null) CredentialSource.otherEmail,
+        if (entries[2] != null) CredentialSource.kakao,
+        if (entries[3] != null) CredentialSource.telegram,
+        if (entries[4] != null) CredentialSource.whatsapp,
+      };
+    });
+  }
 
   Future<void> _syncKakao() async {
     if (_syncingKakao) return;
@@ -62,6 +93,42 @@ class _UserSourcesScreenState extends ConsumerState<UserSourcesScreen> {
     }
   }
 
+  Future<void> _openCredentialDialog(
+    CredentialSource source,
+    String label,
+  ) async {
+    final store = ref.read(credentialStoreProvider);
+    final existing = await store.read(source);
+    if (!mounted) return;
+
+    final result = await showDialog<_CredentialDialogResult>(
+      context: context,
+      builder: (context) =>
+          _CredentialDialog(sourceLabel: label, existing: existing),
+    );
+    if (result == null) return;
+
+    if (result.delete) {
+      await store.delete(source);
+      await _loadCredentialStates();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text(StringsKo.userCredentialDeletedSnack)),
+      );
+      return;
+    }
+
+    await store.write(
+      source,
+      SourceCredential(account: result.account, secret: result.secret),
+    );
+    await _loadCredentialStates();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text(StringsKo.userCredentialSavedSnack)),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -69,6 +136,8 @@ class _UserSourcesScreenState extends ConsumerState<UserSourcesScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          const _CredentialNotice(),
+          const SizedBox(height: 12),
           _SectionHeader(
             title: StringsKo.userEmailSection,
             icon: Icons.mail_outline,
@@ -79,6 +148,21 @@ class _UserSourcesScreenState extends ConsumerState<UserSourcesScreen> {
             label: 'Gmail',
             value: _emailEnabled,
             onChanged: (value) => setState(() => _emailEnabled = value),
+            credentialStored: _storedCredentials.contains(
+              CredentialSource.gmail,
+            ),
+            onCredentialPressed: () =>
+                _openCredentialDialog(CredentialSource.gmail, 'Gmail'),
+          ),
+          _SwitchRow(
+            label: '기타 이메일',
+            value: _otherEmailEnabled,
+            onChanged: (value) => setState(() => _otherEmailEnabled = value),
+            credentialStored: _storedCredentials.contains(
+              CredentialSource.otherEmail,
+            ),
+            onCredentialPressed: () =>
+                _openCredentialDialog(CredentialSource.otherEmail, '기타 이메일'),
           ),
           const SizedBox(height: 12),
           _SectionHeader(
@@ -108,6 +192,31 @@ class _UserSourcesScreenState extends ConsumerState<UserSourcesScreen> {
             label: '카카오톡',
             value: _kakaoEnabled,
             onChanged: (value) => setState(() => _kakaoEnabled = value),
+            credentialStored: _storedCredentials.contains(
+              CredentialSource.kakao,
+            ),
+            onCredentialPressed: () =>
+                _openCredentialDialog(CredentialSource.kakao, '카카오톡'),
+          ),
+          _SwitchRow(
+            label: '텔레그램',
+            value: _telegramEnabled,
+            onChanged: (value) => setState(() => _telegramEnabled = value),
+            credentialStored: _storedCredentials.contains(
+              CredentialSource.telegram,
+            ),
+            onCredentialPressed: () =>
+                _openCredentialDialog(CredentialSource.telegram, '텔레그램'),
+          ),
+          _SwitchRow(
+            label: 'WhatsApp',
+            value: _whatsappEnabled,
+            onChanged: (value) => setState(() => _whatsappEnabled = value),
+            credentialStored: _storedCredentials.contains(
+              CredentialSource.whatsapp,
+            ),
+            onCredentialPressed: () =>
+                _openCredentialDialog(CredentialSource.whatsapp, 'WhatsApp'),
           ),
           Align(
             alignment: Alignment.centerLeft,
@@ -122,13 +231,31 @@ class _UserSourcesScreenState extends ConsumerState<UserSourcesScreen> {
               label: const AdaptiveText(StringsKo.userKakaoSync),
             ),
           ),
-          _SwitchRow(
-            label: StringsKo.userSecureStorage,
-            value: _secureStorage,
-            onChanged: (value) => setState(() => _secureStorage = value),
-          ),
         ],
       ),
+    );
+  }
+}
+
+class _CredentialNotice extends StatelessWidget {
+  const _CredentialNotice();
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Row(
+      children: [
+        Icon(Icons.lock_outline, size: 18, color: colors.onSurfaceVariant),
+        const SizedBox(width: 8),
+        Expanded(
+          child: AdaptiveText(
+            StringsKo.userSecureStorageNotice,
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -172,15 +299,21 @@ class _SwitchRow extends StatelessWidget {
   final String label;
   final bool value;
   final ValueChanged<bool> onChanged;
+  final bool? credentialStored;
+  final VoidCallback? onCredentialPressed;
 
   const _SwitchRow({
     required this.label,
     required this.value,
     required this.onChanged,
+    this.credentialStored,
+    this.onCredentialPressed,
   });
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final stored = credentialStored ?? false;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
@@ -192,11 +325,140 @@ class _SwitchRow extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 16),
+          if (onCredentialPressed != null) ...[
+            Tooltip(
+              message: stored
+                  ? StringsKo.userCredentialSaved
+                  : StringsKo.userCredentialMissing,
+              child: IconButton(
+                onPressed: onCredentialPressed,
+                icon: Icon(
+                  stored ? Icons.key : Icons.key_off_outlined,
+                  color: stored ? colors.primary : colors.onSurfaceVariant,
+                ),
+              ),
+            ),
+            const SizedBox(width: 4),
+          ],
           Switch(value: value, onChanged: onChanged),
         ],
       ),
     );
   }
+}
+
+class _CredentialDialogResult {
+  final String account;
+  final String secret;
+  final bool delete;
+
+  const _CredentialDialogResult.save({
+    required this.account,
+    required this.secret,
+  }) : delete = false;
+
+  const _CredentialDialogResult.delete()
+    : account = '',
+      secret = '',
+      delete = true;
+}
+
+class _CredentialDialog extends StatefulWidget {
+  final String sourceLabel;
+  final SourceCredential? existing;
+
+  const _CredentialDialog({required this.sourceLabel, required this.existing});
+
+  @override
+  State<_CredentialDialog> createState() => _CredentialDialogState();
+}
+
+class _CredentialDialogState extends State<_CredentialDialog> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _accountController;
+  late final TextEditingController _secretController;
+
+  @override
+  void initState() {
+    super.initState();
+    _accountController = TextEditingController(
+      text: widget.existing?.account ?? '',
+    );
+    _secretController = TextEditingController(
+      text: widget.existing?.secret ?? '',
+    );
+  }
+
+  @override
+  void dispose() {
+    _accountController.dispose();
+    _secretController.dispose();
+    super.dispose();
+  }
+
+  void _save() {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+    Navigator.of(context).pop(
+      _CredentialDialogResult.save(
+        account: _accountController.text.trim(),
+        secret: _secretController.text,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: AdaptiveText(
+        '${widget.sourceLabel} ${StringsKo.userCredentialTitle}',
+      ),
+      content: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextFormField(
+              controller: _accountController,
+              decoration: const InputDecoration(
+                labelText: StringsKo.userCredentialAccount,
+              ),
+              validator: _required,
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _secretController,
+              obscureText: true,
+              decoration: const InputDecoration(
+                labelText: StringsKo.userCredentialSecret,
+              ),
+              validator: _required,
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        if (widget.existing != null)
+          TextButton(
+            onPressed: () => Navigator.of(
+              context,
+            ).pop(const _CredentialDialogResult.delete()),
+            child: const AdaptiveText(StringsKo.userCredentialDelete),
+          ),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const AdaptiveText(StringsKo.cancel),
+        ),
+        FilledButton(
+          onPressed: _save,
+          child: const AdaptiveText(StringsKo.userCredentialSave),
+        ),
+      ],
+    );
+  }
+
+  String? _required(String? value) => value == null || value.trim().isEmpty
+      ? StringsKo.userCredentialRequired
+      : null;
 }
 
 class _SectionHeader extends StatelessWidget {

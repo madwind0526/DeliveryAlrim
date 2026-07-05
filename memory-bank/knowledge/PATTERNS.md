@@ -123,6 +123,24 @@ CaptureTestSample
 - Android 앱 내부 SQLite 조회 결과 `cj / 641234567893 / gmail`, `hanjin / 512345678901 / sms` 등록 확인
 - `app/test/debug/capture_test_runner_test.dart`에서 같은 경로를 in-memory DB로 자동 회귀 테스트함
 
+## Flutter secure storage credential store
+
+**사용 시점:** Gmail/IMAP/SNS adapter의 계정, 비밀번호, OAuth refresh token, API key를 로컬에 저장할 때
+
+비밀값은 SQLite에 넣지 않고 `flutter_secure_storage` 뒤의 `CredentialStore` 인터페이스로만 접근한다.
+
+```dart
+final secureStorageProvider = Provider<FlutterSecureStorage>(
+  (ref) => const FlutterSecureStorage(),
+);
+
+final credentialStoreProvider = Provider<CredentialStore>(
+  (ref) => SecureCredentialStore(ref.watch(secureStorageProvider)),
+);
+```
+
+User 화면은 암호화 저장 on/off를 제공하지 않는다. 대신 "로그인 정보는 항상 이 기기에 암호화 저장됩니다" 안내와 소스별 로그인 정보 버튼만 제공한다.
+
 <!-- 예시 형식:
 
 ## [패턴 이름]

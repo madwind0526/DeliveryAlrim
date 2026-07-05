@@ -3,9 +3,9 @@
 ## Current Wave
 
 - **Wave:** 5
-- **Status:** Wave 6 in progress (Gmail/SMS 자동 주입 테스트와 소스 프로필 설계 완료, 실제 계정/권한 연결 남음)
+- **Status:** Wave 6 in progress (Gmail/SMS 자동 주입 테스트와 secure storage 로그인 저장 골격 완료, 실제 계정/권한 연결 남음)
 - **Cache Status:** CLEAN
-- **Last Checkpoint:** 2026-07-06 Wave 6 Gmail/SMS 자동 주입 테스트 실기기 DB 검증
+- **Last Checkpoint:** 2026-07-06 Wave 6 secure storage 로그인 관리 골격 빌드 검증
 
 ## Wave History
 
@@ -39,3 +39,5 @@
 - Gmail/SMS 자동 주입 버튼은 앱 내부 샘플을 생성해 `RuleEngine → ParcelRepository` 경로로 배송 DB에 등록한다.
 - Android 실기기 검증: `Gmail 샘플 보내기`, `SMS 샘플 보내기` 실행 후 DB에 `cj / 641234567893 / gmail`, `hanjin / 512345678901 / sms`가 등록됨.
 - 로그인/모니터링 관리는 소스 프로필 단위로 묶고, 비밀값은 SQLite가 아니라 Android Keystore/secure storage에 저장한다.
+- Google Play Store 배포는 현재 목표가 아니며, 모니터링 앱 로그인/token/API key는 사용자가 끄는 옵션 없이 항상 로컬 secure storage에 저장한다.
+- User 화면에서 `암호화 저장` 스위치를 제거하고 Gmail/카카오톡 로그인 정보 관리 다이얼로그와 secure storage `CredentialStore` 골격을 추가했다.
