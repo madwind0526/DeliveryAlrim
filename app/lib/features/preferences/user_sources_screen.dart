@@ -49,13 +49,11 @@ class _UserSourcesScreenState extends ConsumerState<UserSourcesScreen> {
             actionLabel: StringsKo.addSource,
             onPressed: () {},
           ),
-          SwitchListTile(
-            title: const AdaptiveText('Gmail'),
-            subtitle: AdaptiveText(
-              _emailEnabled
-                  ? StringsKo.sourceEnabled
-                  : StringsKo.sourceDisabled,
-            ),
+          _SwitchRow(
+            label: 'Gmail',
+            status: _emailEnabled
+                ? StringsKo.sourceEnabled
+                : StringsKo.sourceDisabled,
             value: _emailEnabled,
             onChanged: (value) => setState(() => _emailEnabled = value),
           ),
@@ -65,13 +63,11 @@ class _UserSourcesScreenState extends ConsumerState<UserSourcesScreen> {
             actionLabel: StringsKo.addSource,
             onPressed: () {},
           ),
-          SwitchListTile(
-            title: const AdaptiveText('카카오톡'),
-            subtitle: AdaptiveText(
-              _kakaoEnabled
-                  ? StringsKo.sourceEnabled
-                  : StringsKo.sourceDisabled,
-            ),
+          _SwitchRow(
+            label: '카카오톡',
+            status: _kakaoEnabled
+                ? StringsKo.sourceEnabled
+                : StringsKo.sourceDisabled,
             value: _kakaoEnabled,
             onChanged: (value) => setState(() => _kakaoEnabled = value),
           ),
@@ -88,11 +84,50 @@ class _UserSourcesScreenState extends ConsumerState<UserSourcesScreen> {
               label: const AdaptiveText(StringsKo.userKakaoSync),
             ),
           ),
-          SwitchListTile(
-            title: const AdaptiveText(StringsKo.userSecureStorage),
+          _SwitchRow(
+            label: StringsKo.userSecureStorage,
             value: _secureStorage,
             onChanged: (value) => setState(() => _secureStorage = value),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SwitchRow extends StatelessWidget {
+  final String label;
+  final String? status;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  const _SwitchRow({
+    required this.label,
+    this.status,
+    required this.value,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final text = status == null ? label : '$label · $status';
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: AdaptiveText(
+              text,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: status == StringsKo.sourceDisabled
+                    ? colors.onSurfaceVariant
+                    : null,
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Switch(value: value, onChanged: onChanged),
         ],
       ),
     );
