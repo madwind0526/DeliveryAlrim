@@ -28,6 +28,7 @@ class SourceCredential {
 }
 
 abstract interface class CredentialStore {
+  Future<bool> has(CredentialSource source);
   Future<SourceCredential?> read(CredentialSource source);
   Future<void> write(CredentialSource source, SourceCredential credential);
   Future<void> delete(CredentialSource source);
@@ -39,9 +40,22 @@ class SecureCredentialStore implements CredentialStore {
   const SecureCredentialStore(this._storage);
 
   @override
+  Future<bool> has(CredentialSource source) async {
+    final hasAccount = await _storage.containsKey(key: _key(source, 'account'));
+    final hasSecret = await _storage.containsKey(key: _key(source, 'secret'));
+    return hasAccount && hasSecret;
+  }
+
+  @override
   Future<SourceCredential?> read(CredentialSource source) async {
-    final account = await _storage.read(key: _key(source, 'account'));
-    final secret = await _storage.read(key: _key(source, 'secret'));
+    final String? account;
+    final String? secret;
+    try {
+      account = await _storage.read(key: _key(source, 'account'));
+      secret = await _storage.read(key: _key(source, 'secret'));
+    } catch (_) {
+      return null;
+    }
     if (account == null || secret == null) return null;
     return SourceCredential(account: account, secret: secret);
   }

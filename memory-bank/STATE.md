@@ -5,7 +5,7 @@
 - **Wave:** 5
 - **Status:** Wave 6 in progress (User 소스 추가/secure storage 로그인 저장 골격 완료, 실제 계정/권한 연결 남음)
 - **Cache Status:** CLEAN
-- **Last Checkpoint:** 2026-07-06 Windows 세로 테스트 창 빌드/실행 검증
+- **Last Checkpoint:** 2026-07-06 Android 로그인 정보 key 보존 확인 및 저장 상태 판정 보강
 
 ## Wave History
 
@@ -44,3 +44,5 @@
 - 이메일/SNS `추가` 버튼은 하나의 다이얼로그에서 소스 선택과 로그인 정보 입력을 함께 처리하고, 선택한 소스를 켠 뒤 secure storage에 저장한다. 기존 행의 로그인 버튼은 수정/삭제용으로 유지한다.
 - Android 실기기에서 이메일 `추가` 버튼이 `Gmail`, `기타 이메일` 선택 다이얼로그를 여는 것을 확인했다. 사용자는 Gmail/카카오톡 계정 정보를 입력 완료했다.
 - Windows 테스트 실행 창 기본 크기를 휴대폰 세로 화면에 가까운 `430x932`로 변경하고 Debug Windows 빌드/실행을 확인했다.
+- `adb install -r` 업데이트 후 Android secure storage에서 `credential.gmail.*`, `credential.kakao.*` key 존재를 확인했다.
+- User 화면 저장 상태는 비밀값 복호화 결과가 아니라 secure storage key 존재 여부(`CredentialStore.has`)로 판단하도록 보강했다.

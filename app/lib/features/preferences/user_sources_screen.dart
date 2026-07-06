@@ -39,24 +39,24 @@ class _UserSourcesScreenState extends ConsumerState<UserSourcesScreen> {
   Future<void> _loadCredentialStates() async {
     final store = ref.read(credentialStoreProvider);
     final entries = await Future.wait([
-      store.read(CredentialSource.gmail),
-      store.read(CredentialSource.otherEmail),
-      store.read(CredentialSource.kakao),
-      store.read(CredentialSource.telegram),
-      store.read(CredentialSource.whatsapp),
+      store.has(CredentialSource.gmail),
+      store.has(CredentialSource.otherEmail),
+      store.has(CredentialSource.kakao),
+      store.has(CredentialSource.telegram),
+      store.has(CredentialSource.whatsapp),
     ]);
     if (!mounted) return;
     setState(() {
       _storedCredentials = {
-        if (entries[0] != null) CredentialSource.gmail,
-        if (entries[1] != null) CredentialSource.otherEmail,
-        if (entries[2] != null) CredentialSource.kakao,
-        if (entries[3] != null) CredentialSource.telegram,
-        if (entries[4] != null) CredentialSource.whatsapp,
+        if (entries[0]) CredentialSource.gmail,
+        if (entries[1]) CredentialSource.otherEmail,
+        if (entries[2]) CredentialSource.kakao,
+        if (entries[3]) CredentialSource.telegram,
+        if (entries[4]) CredentialSource.whatsapp,
       };
-      _otherEmailVisible = entries[1] != null;
-      _telegramVisible = entries[3] != null;
-      _whatsappVisible = entries[4] != null;
+      _otherEmailVisible = entries[1];
+      _telegramVisible = entries[3];
+      _whatsappVisible = entries[4];
     });
   }
 
