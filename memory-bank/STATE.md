@@ -5,7 +5,7 @@
 - **Wave:** 6
 - **Status:** In Progress
 - **Cache Status:** CLEAN
-- **Last Checkpoint:** 2026-07-06 Settings 로컬/테스트 분리, Android 알림 접근/접근성 설정 이동, 실기기 업데이트/검증 완료
+- **Last Checkpoint:** 2026-07-06 앱 표시 이름을 배송알리미로 변경
 
 ## Wave History
 
@@ -22,6 +22,7 @@
 ## Session Notes
 
 - Supabase, 서버 로그인, 멀티 유저 기능은 사용하지 않는다.
+- 앱 표시 이름은 배송알리미다. 내부 패키지명, DB 파일명, MethodChannel 이름은 호환성을 위해 유지한다.
 - 앱 자체 로그인은 제거하고, 외부 모니터링 소스의 인증 정보만 User 화면에서 관리한다.
 - 모니터링 소스 비밀값은 SQLite가 아니라 Android secure storage에 저장한다.
 - Settings > 로컬에는 알림 접근/카카오톡 접근성 수집 상태와 Android 시스템 설정 이동을 둔다.

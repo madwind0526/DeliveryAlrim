@@ -1,4 +1,4 @@
-# CheckShipping
+# 배송알리미
 
 > **Working directory: `C:\Claude\CheckShipping`**
 

@@ -1,7 +1,7 @@
 /// Centralized Korean UI strings.
 /// All user-visible text lives here (global rule G-02).
 abstract final class StringsKo {
-  static const appTitle = '체크쉬핑';
+  static const appTitle = '배송알리미';
 
   // Parcel list
   static const parcelListTitle = '내 배송';
@@ -66,9 +66,9 @@ abstract final class StringsKo {
   static const settingPermissionOn = '시스템 설정에서 허용됨';
   static const settingPermissionOff = '시스템 설정에서 허용 필요';
   static const settingNotificationSystemHint =
-      'Android 설정 > 알림 접근에서 체크쉬핑을 허용해야 합니다.';
+      'Android 설정 > 알림 접근에서 배송알리미를 허용해야 합니다.';
   static const settingAccessibilitySystemHint =
-      'Android 설정 > 접근성 > 설치된 앱에서 체크쉬핑 카카오톡 수집을 켜야 합니다.';
+      'Android 설정 > 접근성 > 설치된 앱에서 배송알리미 카카오톡 수집을 켜야 합니다.';
   static const settingOpenSettingsFailed = '시스템 설정 화면을 열 수 없습니다';
   static const userTitle = '사용자';
   static const userEmailSection = '이메일 모니터링';

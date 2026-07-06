@@ -3,6 +3,7 @@
 ## Current Focus
 
 - 앱 방향은 Supabase/Auth 없는 로컬 단일 사용자 Android 앱이다.
+- 앱 이름은 `배송알리미`를 사용한다.
 - Windows는 세로형 디버그 창으로 먼저 검증하고, Android 실기기에서 최종 확인한다.
 - 모든 배송 데이터와 모니터링 설정은 로컬 저장소에 둔다.
 - Gmail/문자/SNS 모니터링 소스의 로그인 정보는 항상 secure storage에 암호화 저장한다.

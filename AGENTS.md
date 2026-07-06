@@ -1,11 +1,11 @@
-# CheckShipping Agent Instructions
+# 배송알리미 Agent Instructions
 
-이 파일은 CheckShipping 프로젝트에서 Codex가 항상 따라야 하는 프로젝트 규칙이다.
+이 파일은 배송알리미 프로젝트에서 Codex가 항상 따라야 하는 프로젝트 규칙이다.
 
 ## Mandatory Project Rules
 
 - 코드 주석은 영어만 사용한다. UI 텍스트는 한국어로 작성한다.
-- Supabase, 앱 로그인, 멀티 유저 기능은 사용하지 않는다. CheckShipping은 단일 사용자 로컬 저장 Android 앱이다.
+- Supabase, 앱 로그인, 멀티 유저 기능은 사용하지 않는다. 배송알리미는 단일 사용자 로컬 저장 Android 앱이다.
 - Android가 실제 타깃이고 Windows는 테스트 전용이다.
 - Gmail, 기타 이메일, SNS, 쇼핑몰 등 외부 모니터링 소스의 계정/token/API key는 항상 로컬 secure storage에 암호화 저장한다.
 - User 화면은 앱 로그인 화면이 아니라 모니터링 소스와 해당 소스의 인증 정보를 관리하는 화면이다.
