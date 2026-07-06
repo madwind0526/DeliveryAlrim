@@ -137,41 +137,29 @@ class _UserSourcesScreenState extends ConsumerState<UserSourcesScreen> {
   }
 
   Future<void> _openAddSourceDialog(List<_SourceOption> options) async {
-    final option = await showDialog<_SourceOption>(
+    final result = await showDialog<_AddSourceDialogResult>(
       context: context,
-      builder: (context) => SimpleDialog(
-        title: const AdaptiveText(StringsKo.addSourceTitle),
-        children: [
-          for (final option in options)
-            SimpleDialogOption(
-              onPressed: () => Navigator.of(context).pop(option),
-              child: Row(
-                children: [
-                  Icon(option.icon),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: AdaptiveText(
-                      option.label,
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-        ],
-      ),
+      builder: (context) => _AddSourceDialog(options: options),
     );
-    if (option == null) return;
+    if (result == null) return;
     if (!mounted) return;
 
-    setState(option.enable);
-    if (option.credentialSource == null) {
+    setState(result.option.enable);
+    final credential = result.credential;
+    final credentialSource = result.option.credentialSource;
+    if (credential == null || credentialSource == null) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text(StringsKo.sourceAddedSnack)));
       return;
     }
-    await _openCredentialDialog(option.credentialSource!, option.label);
+
+    await ref.read(credentialStoreProvider).write(credentialSource, credential);
+    await _loadCredentialStates();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text(StringsKo.userCredentialSavedSnack)),
+    );
   }
 
   @override
@@ -348,6 +336,134 @@ class _SourceOption {
     required this.enable,
     this.credentialSource,
   });
+}
+
+class _AddSourceDialogResult {
+  final _SourceOption option;
+  final SourceCredential? credential;
+
+  const _AddSourceDialogResult({required this.option, this.credential});
+}
+
+class _AddSourceDialog extends StatefulWidget {
+  final List<_SourceOption> options;
+
+  const _AddSourceDialog({required this.options});
+
+  @override
+  State<_AddSourceDialog> createState() => _AddSourceDialogState();
+}
+
+class _AddSourceDialogState extends State<_AddSourceDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _accountController = TextEditingController();
+  final _secretController = TextEditingController();
+  late _SourceOption _selected;
+
+  @override
+  void initState() {
+    super.initState();
+    _selected = widget.options.first;
+  }
+
+  @override
+  void dispose() {
+    _accountController.dispose();
+    _secretController.dispose();
+    super.dispose();
+  }
+
+  bool get _needsCredential => _selected.credentialSource != null;
+
+  void _save() {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+    Navigator.of(context).pop(
+      _AddSourceDialogResult(
+        option: _selected,
+        credential: _needsCredential
+            ? SourceCredential(
+                account: _accountController.text.trim(),
+                secret: _secretController.text,
+              )
+            : null,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const AdaptiveText(StringsKo.addSourceTitle),
+      content: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            DropdownButtonFormField<_SourceOption>(
+              initialValue: _selected,
+              decoration: const InputDecoration(
+                labelText: StringsKo.channelLabel,
+              ),
+              items: [
+                for (final option in widget.options)
+                  DropdownMenuItem(
+                    value: option,
+                    child: Row(
+                      children: [
+                        Icon(option.icon, size: 20),
+                        const SizedBox(width: 8),
+                        AdaptiveText(option.label),
+                      ],
+                    ),
+                  ),
+              ],
+              onChanged: (option) {
+                if (option == null) return;
+                setState(() {
+                  _selected = option;
+                  _accountController.clear();
+                  _secretController.clear();
+                });
+              },
+            ),
+            if (_needsCredential) ...[
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _accountController,
+                decoration: const InputDecoration(
+                  labelText: StringsKo.userCredentialAccount,
+                ),
+                validator: _required,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _secretController,
+                obscureText: true,
+                decoration: const InputDecoration(
+                  labelText: StringsKo.userCredentialSecret,
+                ),
+                validator: _required,
+              ),
+            ],
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const AdaptiveText(StringsKo.cancel),
+        ),
+        FilledButton(
+          onPressed: _save,
+          child: const AdaptiveText(StringsKo.userCredentialSave),
+        ),
+      ],
+    );
+  }
+
+  String? _required(String? value) => value == null || value.trim().isEmpty
+      ? StringsKo.userCredentialRequired
+      : null;
 }
 
 class _CredentialNotice extends StatelessWidget {
