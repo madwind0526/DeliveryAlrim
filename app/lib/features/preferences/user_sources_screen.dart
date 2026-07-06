@@ -28,6 +28,7 @@ class _UserSourcesScreenState extends ConsumerState<UserSourcesScreen> {
   bool _whatsappVisible = false;
   bool _syncingKakao = false;
   bool _sendingTest = false;
+  String _otherEmailLabel = '기타 이메일';
   Set<CredentialSource> _storedCredentials = {};
 
   @override
@@ -38,6 +39,7 @@ class _UserSourcesScreenState extends ConsumerState<UserSourcesScreen> {
 
   Future<void> _loadCredentialStates() async {
     final store = ref.read(credentialStoreProvider);
+    final labelStore = ref.read(sourceLabelStoreProvider);
     final entries = await Future.wait([
       store.has(CredentialSource.gmail),
       store.has(CredentialSource.otherEmail),
@@ -45,6 +47,7 @@ class _UserSourcesScreenState extends ConsumerState<UserSourcesScreen> {
       store.has(CredentialSource.telegram),
       store.has(CredentialSource.whatsapp),
     ]);
+    final otherEmailLabel = await labelStore.read(CredentialSource.otherEmail);
     if (!mounted) return;
     setState(() {
       _storedCredentials = {
@@ -57,6 +60,7 @@ class _UserSourcesScreenState extends ConsumerState<UserSourcesScreen> {
       _otherEmailVisible = entries[1];
       _telegramVisible = entries[3];
       _whatsappVisible = entries[4];
+      _otherEmailLabel = _cleanLabel(otherEmailLabel, '기타 이메일');
     });
   }
 
@@ -136,6 +140,11 @@ class _UserSourcesScreenState extends ConsumerState<UserSourcesScreen> {
     );
   }
 
+  String _cleanLabel(String? value, String fallback) {
+    final label = value?.trim();
+    return label == null || label.isEmpty ? fallback : label;
+  }
+
   Future<void> _openAddSourceDialog(List<_SourceOption> options) async {
     final result = await showDialog<_AddSourceDialogResult>(
       context: context,
@@ -145,6 +154,12 @@ class _UserSourcesScreenState extends ConsumerState<UserSourcesScreen> {
     if (!mounted) return;
 
     setState(result.option.enable);
+    final displayLabel = result.displayLabel;
+    final labelSource = result.option.labelSource;
+    if (displayLabel != null && labelSource != null) {
+      await ref.read(sourceLabelStoreProvider).write(labelSource, displayLabel);
+      if (!mounted) return;
+    }
     final credential = result.credential;
     final credentialSource = result.option.credentialSource;
     if (credential == null || credentialSource == null) {
@@ -186,6 +201,8 @@ class _UserSourcesScreenState extends ConsumerState<UserSourcesScreen> {
                 label: '기타 이메일',
                 icon: Icons.alternate_email,
                 credentialSource: CredentialSource.otherEmail,
+                labelSource: CredentialSource.otherEmail,
+                editableLabel: true,
                 enable: () {
                   _otherEmailVisible = true;
                   _otherEmailEnabled = true;
@@ -205,14 +222,16 @@ class _UserSourcesScreenState extends ConsumerState<UserSourcesScreen> {
           ),
           if (_otherEmailVisible)
             _SwitchRow(
-              label: '기타 이메일',
+              label: _otherEmailLabel,
               value: _otherEmailEnabled,
               onChanged: (value) => setState(() => _otherEmailEnabled = value),
               credentialStored: _storedCredentials.contains(
                 CredentialSource.otherEmail,
               ),
-              onCredentialPressed: () =>
-                  _openCredentialDialog(CredentialSource.otherEmail, '기타 이메일'),
+              onCredentialPressed: () => _openCredentialDialog(
+                CredentialSource.otherEmail,
+                _otherEmailLabel,
+              ),
             ),
           const SizedBox(height: 12),
           _SectionHeader(
@@ -328,6 +347,8 @@ class _SourceOption {
   final String label;
   final IconData icon;
   final CredentialSource? credentialSource;
+  final CredentialSource? labelSource;
+  final bool editableLabel;
   final VoidCallback enable;
 
   const _SourceOption({
@@ -335,14 +356,21 @@ class _SourceOption {
     required this.icon,
     required this.enable,
     this.credentialSource,
+    this.labelSource,
+    this.editableLabel = false,
   });
 }
 
 class _AddSourceDialogResult {
   final _SourceOption option;
   final SourceCredential? credential;
+  final String? displayLabel;
 
-  const _AddSourceDialogResult({required this.option, this.credential});
+  const _AddSourceDialogResult({
+    required this.option,
+    this.credential,
+    this.displayLabel,
+  });
 }
 
 class _AddSourceDialog extends StatefulWidget {
@@ -356,6 +384,7 @@ class _AddSourceDialog extends StatefulWidget {
 
 class _AddSourceDialogState extends State<_AddSourceDialog> {
   final _formKey = GlobalKey<FormState>();
+  final _labelController = TextEditingController();
   final _accountController = TextEditingController();
   final _secretController = TextEditingController();
   late _SourceOption _selected;
@@ -369,18 +398,21 @@ class _AddSourceDialogState extends State<_AddSourceDialog> {
 
   @override
   void dispose() {
+    _labelController.dispose();
     _accountController.dispose();
     _secretController.dispose();
     super.dispose();
   }
 
   bool get _needsCredential => _selected.credentialSource != null;
+  bool get _needsDisplayName => _selected.editableLabel;
 
   void _save() {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     Navigator.of(context).pop(
       _AddSourceDialogResult(
         option: _selected,
+        displayLabel: _needsDisplayName ? _labelController.text.trim() : null,
         credential: _needsCredential
             ? SourceCredential(
                 account: _accountController.text.trim(),
@@ -393,74 +425,95 @@ class _AddSourceDialogState extends State<_AddSourceDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final media = MediaQuery.of(context);
+    final maxContentHeight = (media.size.height - media.viewInsets.bottom - 220)
+        .clamp(220.0, 420.0);
     return AlertDialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
       title: const AdaptiveText(StringsKo.addSourceTitle),
-      content: Form(
-        key: _formKey,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            DropdownButtonFormField<_SourceOption>(
-              initialValue: _selected,
-              decoration: const InputDecoration(
-                labelText: StringsKo.channelLabel,
-              ),
-              items: [
-                for (final option in widget.options)
-                  DropdownMenuItem(
-                    value: option,
-                    child: Row(
-                      children: [
-                        Icon(option.icon, size: 20),
-                        const SizedBox(width: 8),
-                        AdaptiveText(option.label),
-                      ],
-                    ),
+      content: ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: maxContentHeight),
+        child: SingleChildScrollView(
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                DropdownButtonFormField<_SourceOption>(
+                  initialValue: _selected,
+                  decoration: const InputDecoration(
+                    labelText: StringsKo.channelLabel,
                   ),
+                  items: [
+                    for (final option in widget.options)
+                      DropdownMenuItem(
+                        value: option,
+                        child: Row(
+                          children: [
+                            Icon(option.icon, size: 20),
+                            const SizedBox(width: 8),
+                            AdaptiveText(option.label),
+                          ],
+                        ),
+                      ),
+                  ],
+                  onChanged: (option) {
+                    if (option == null) return;
+                    setState(() {
+                      _selected = option;
+                      _labelController.clear();
+                      _accountController.clear();
+                      _secretController.clear();
+                      _secretVisible = false;
+                    });
+                  },
+                ),
+                if (_needsDisplayName) ...[
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _labelController,
+                    decoration: const InputDecoration(
+                      labelText: StringsKo.sourceDisplayName,
+                      hintText: StringsKo.sourceDisplayNameHint,
+                    ),
+                    validator: _requiredDisplayName,
+                  ),
+                ],
+                if (_needsCredential) ...[
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _accountController,
+                    decoration: const InputDecoration(
+                      labelText: StringsKo.userCredentialAccount,
+                    ),
+                    validator: _required,
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _secretController,
+                    obscureText: !_secretVisible,
+                    decoration: InputDecoration(
+                      labelText: StringsKo.userCredentialSecret,
+                      suffixIcon: IconButton(
+                        tooltip: _secretVisible
+                            ? StringsKo.userCredentialHideSecret
+                            : StringsKo.userCredentialShowSecret,
+                        icon: Icon(
+                          _secretVisible
+                              ? Icons.visibility_off_outlined
+                              : Icons.visibility_outlined,
+                        ),
+                        onPressed: () => setState(() {
+                          _secretVisible = !_secretVisible;
+                        }),
+                      ),
+                    ),
+                    validator: _required,
+                  ),
+                ],
               ],
-              onChanged: (option) {
-                if (option == null) return;
-                setState(() {
-                  _selected = option;
-                  _accountController.clear();
-                  _secretController.clear();
-                  _secretVisible = false;
-                });
-              },
             ),
-            if (_needsCredential) ...[
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _accountController,
-                decoration: const InputDecoration(
-                  labelText: StringsKo.userCredentialAccount,
-                ),
-                validator: _required,
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _secretController,
-                obscureText: !_secretVisible,
-                decoration: InputDecoration(
-                  labelText: StringsKo.userCredentialSecret,
-                  suffixIcon: IconButton(
-                    tooltip: _secretVisible
-                        ? StringsKo.userCredentialHideSecret
-                        : StringsKo.userCredentialShowSecret,
-                    icon: Icon(
-                      _secretVisible
-                          ? Icons.visibility_off_outlined
-                          : Icons.visibility_outlined,
-                    ),
-                    onPressed: () => setState(() {
-                      _secretVisible = !_secretVisible;
-                    }),
-                  ),
-                ),
-                validator: _required,
-              ),
-            ],
-          ],
+          ),
         ),
       ),
       actions: [
@@ -478,6 +531,11 @@ class _AddSourceDialogState extends State<_AddSourceDialog> {
 
   String? _required(String? value) => value == null || value.trim().isEmpty
       ? StringsKo.userCredentialRequired
+      : null;
+
+  String? _requiredDisplayName(String? value) =>
+      value == null || value.trim().isEmpty
+      ? StringsKo.sourceDisplayNameRequired
       : null;
 }
 
@@ -653,45 +711,54 @@ class _CredentialDialogState extends State<_CredentialDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final media = MediaQuery.of(context);
+    final maxContentHeight = (media.size.height - media.viewInsets.bottom - 220)
+        .clamp(220.0, 420.0);
     return AlertDialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
       title: AdaptiveText(
         '${widget.sourceLabel} ${StringsKo.userCredentialTitle}',
       ),
-      content: Form(
-        key: _formKey,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextFormField(
-              controller: _accountController,
-              decoration: const InputDecoration(
-                labelText: StringsKo.userCredentialAccount,
-              ),
-              validator: _required,
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _secretController,
-              obscureText: !_secretVisible,
-              decoration: InputDecoration(
-                labelText: StringsKo.userCredentialSecret,
-                suffixIcon: IconButton(
-                  tooltip: _secretVisible
-                      ? StringsKo.userCredentialHideSecret
-                      : StringsKo.userCredentialShowSecret,
-                  icon: Icon(
-                    _secretVisible
-                        ? Icons.visibility_off_outlined
-                        : Icons.visibility_outlined,
+      content: ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: maxContentHeight),
+        child: SingleChildScrollView(
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: _accountController,
+                  decoration: const InputDecoration(
+                    labelText: StringsKo.userCredentialAccount,
                   ),
-                  onPressed: () => setState(() {
-                    _secretVisible = !_secretVisible;
-                  }),
+                  validator: _required,
                 ),
-              ),
-              validator: _required,
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _secretController,
+                  obscureText: !_secretVisible,
+                  decoration: InputDecoration(
+                    labelText: StringsKo.userCredentialSecret,
+                    suffixIcon: IconButton(
+                      tooltip: _secretVisible
+                          ? StringsKo.userCredentialHideSecret
+                          : StringsKo.userCredentialShowSecret,
+                      icon: Icon(
+                        _secretVisible
+                            ? Icons.visibility_off_outlined
+                            : Icons.visibility_outlined,
+                      ),
+                      onPressed: () => setState(() {
+                        _secretVisible = !_secretVisible;
+                      }),
+                    ),
+                  ),
+                  validator: _required,
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
       actions: [

@@ -9,6 +9,10 @@ final credentialStoreProvider = Provider<CredentialStore>(
   (ref) => SecureCredentialStore(ref.watch(secureStorageProvider)),
 );
 
+final sourceLabelStoreProvider = Provider<SourceLabelStore>(
+  (ref) => SecureSourceLabelStore(ref.watch(secureStorageProvider)),
+);
+
 enum CredentialSource {
   gmail('gmail'),
   otherEmail('other_email'),
@@ -31,6 +35,12 @@ abstract interface class CredentialStore {
   Future<bool> has(CredentialSource source);
   Future<SourceCredential?> read(CredentialSource source);
   Future<void> write(CredentialSource source, SourceCredential credential);
+  Future<void> delete(CredentialSource source);
+}
+
+abstract interface class SourceLabelStore {
+  Future<String?> read(CredentialSource source);
+  Future<void> write(CredentialSource source, String label);
   Future<void> delete(CredentialSource source);
 }
 
@@ -80,4 +90,31 @@ class SecureCredentialStore implements CredentialStore {
 
   String _key(CredentialSource source, String field) =>
       'credential.${source.code}.$field';
+}
+
+class SecureSourceLabelStore implements SourceLabelStore {
+  final FlutterSecureStorage _storage;
+
+  const SecureSourceLabelStore(this._storage);
+
+  @override
+  Future<String?> read(CredentialSource source) async {
+    try {
+      return _storage.read(key: _key(source));
+    } catch (_) {
+      return null;
+    }
+  }
+
+  @override
+  Future<void> write(CredentialSource source, String label) async {
+    await _storage.write(key: _key(source), value: label);
+  }
+
+  @override
+  Future<void> delete(CredentialSource source) async {
+    await _storage.delete(key: _key(source));
+  }
+
+  String _key(CredentialSource source) => 'source_label.${source.code}';
 }

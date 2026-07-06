@@ -85,6 +85,9 @@ abstract final class StringsKo {
   static const userKakaoSyncEmpty = '새 카카오톡 배송 정보가 없습니다';
   static const addSource = '추가';
   static const addSourceTitle = '소스 추가';
+  static const sourceDisplayName = '표시 이름';
+  static const sourceDisplayNameHint = '예: 회사 메일';
+  static const sourceDisplayNameRequired = '표시 이름을 입력해 주세요';
   static const sourceAddedSnack = '모니터링 소스를 추가했습니다';
   static const sourceEnabled = '사용';
   static const sourceDisabled = '사용 안 함';
