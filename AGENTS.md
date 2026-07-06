@@ -52,6 +52,14 @@ return Dialog(
 
 작업 완료 전에는 작은 화면, 큰 시스템 글꼴, 키보드 표시 상태에서 overflow가 없는지 반드시 확인한다.
 
+## UI Regression Rule
+
+UI 버그를 고칠 때는 기존에 정상 동작하던 기본 플로우를 반드시 먼저 확인하고, 수정 후 같은 플로우를 다시 확인한다.
+
+- 다이얼로그 수정 시 `추가 버튼 탭 → 팝업 표시 → 필드 입력 포커스 → 키보드 표시 → 저장/취소`를 모두 확인한다.
+- overflow나 스타일 문제만 보고 구조를 교체하지 않는다. 기존 동작이 보존되는지 실제 Android 기기 또는 Windows 테스트 화면에서 확인한다.
+- 잘못된 패턴을 발견하면 코드만 고치지 말고 `AGENTS.md`와 `memory-bank/knowledge/RULES.md`의 규칙도 함께 수정한다.
+
 ## Memory-Bank
 
 세션 시작 시 `memory-bank/active-context.md`와 `memory-bank/STATE.md`를 먼저 확인한다.
