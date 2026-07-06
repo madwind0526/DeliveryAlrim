@@ -1,5 +1,8 @@
 package com.checkshipping.check_shipping
 
+import android.content.ComponentName
+import android.content.Intent
+import android.provider.Settings
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -17,6 +20,19 @@ class MainActivity : FlutterActivity() {
                         getSharedPreferences(PREFS, MODE_PRIVATE).edit().clear().apply()
                         result.success(null)
                     }
+                    else -> result.notImplemented()
+                }
+            }
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, SETTINGS_CHANNEL)
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "readState" -> result.success(readSettingsState())
+                    "openNotificationAccessSettings" -> result.success(
+                        openSettings(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS),
+                    )
+                    "openAccessibilitySettings" -> result.success(
+                        openSettings(Settings.ACTION_ACCESSIBILITY_SETTINGS),
+                    )
                     else -> result.notImplemented()
                 }
             }
@@ -103,8 +119,59 @@ class MainActivity : FlutterActivity() {
         return null
     }
 
+    private fun readSettingsState(): Map<String, Any> {
+        return mapOf(
+            "notificationAccess" to isNotificationAccessEnabled(),
+            "accessibilityAccess" to isAccessibilityAccessEnabled(),
+        )
+    }
+
+    private fun openSettings(action: String): Boolean {
+        return try {
+            startActivity(Intent(action))
+            true
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    private fun isNotificationAccessEnabled(): Boolean {
+        val enabled = Settings.Secure.getString(
+            contentResolver,
+            "enabled_notification_listeners",
+        ) ?: return false
+        val component = ComponentName(
+            packageName,
+            CheckShippingNotificationListenerService::class.java.name,
+        )
+        return enabled.split(':').any {
+            it.equals(component.flattenToString(), ignoreCase = true)
+        }
+    }
+
+    private fun isAccessibilityAccessEnabled(): Boolean {
+        val accessibilityEnabled = Settings.Secure.getInt(
+            contentResolver,
+            Settings.Secure.ACCESSIBILITY_ENABLED,
+            0,
+        ) == 1
+        if (!accessibilityEnabled) return false
+        val enabled = Settings.Secure.getString(
+            contentResolver,
+            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
+        ) ?: return false
+        val component = ComponentName(
+            packageName,
+            KakaoAccessibilityService::class.java.name,
+        )
+        return enabled.split(':').any {
+            it.equals(component.flattenToString(), ignoreCase = true)
+        }
+    }
+
     companion object {
         private const val CHANNEL = "check_shipping/kakao_capture"
+        private const val SETTINGS_CHANNEL = "check_shipping/system_settings"
         private const val PREFS = "kakao_accessibility"
         private val FLIP_FONT_PACKAGES = listOf(
             "com.monotype.android.font.samsungone",

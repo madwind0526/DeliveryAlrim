@@ -63,6 +63,13 @@ abstract final class StringsKo {
   static const settingNotifications = '알림 수집';
   static const settingAccessibility = '카카오톡 접근성 수집';
   static const settingTestSection = '테스트';
+  static const settingPermissionOn = '시스템 설정에서 허용됨';
+  static const settingPermissionOff = '시스템 설정에서 허용 필요';
+  static const settingNotificationSystemHint =
+      'Android 설정 > 알림 접근에서 체크쉬핑을 허용해야 합니다.';
+  static const settingAccessibilitySystemHint =
+      'Android 설정 > 접근성 > 설치된 앱에서 체크쉬핑 카카오톡 수집을 켜야 합니다.';
+  static const settingOpenSettingsFailed = '시스템 설정 화면을 열 수 없습니다';
   static const userTitle = '사용자';
   static const userEmailSection = '이메일 모니터링';
   static const userSmsSection = '문자 모니터링';

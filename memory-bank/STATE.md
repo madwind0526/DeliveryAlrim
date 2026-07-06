@@ -5,7 +5,7 @@
 - **Wave:** 6
 - **Status:** In Progress
 - **Cache Status:** CLEAN
-- **Last Checkpoint:** 2026-07-06 수동 배송 등록을 디버그 기능에서 홈 `+` FAB 정식 기능으로 승격하고 Android 실기기 업데이트/검증 완료
+- **Last Checkpoint:** 2026-07-06 Settings 로컬/테스트 분리, Android 알림 접근/접근성 설정 이동, 실기기 업데이트/검증 완료
 
 ## Wave History
 
@@ -24,6 +24,7 @@
 - Supabase, 서버 로그인, 멀티 유저 기능은 사용하지 않는다.
 - 앱 자체 로그인은 제거하고, 외부 모니터링 소스의 인증 정보만 User 화면에서 관리한다.
 - 모니터링 소스 비밀값은 SQLite가 아니라 Android secure storage에 저장한다.
-- Gmail/SMS 샘플과 카카오톡 동기화, 알림 주입 테스트는 Settings > 테스트에 둔다.
+- Settings > 로컬에는 알림 접근/카카오톡 접근성 수집 상태와 Android 시스템 설정 이동을 둔다.
+- Settings > 테스트에는 Gmail/SMS 샘플과 카카오톡 동기화, 알림 주입 테스트만 둔다.
 - 배송 수동 등록은 자동 수집 보완용 정식 기능이며 홈 배송 목록 `+` FAB에서 연다.
 - Android 업데이트는 `adb install -r`로 진행해 secure storage의 기존 로그인 정보를 보존한다.

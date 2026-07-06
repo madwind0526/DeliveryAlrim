@@ -1,0 +1,5 @@
+package com.checkshipping.check_shipping
+
+import android.service.notification.NotificationListenerService
+
+class CheckShippingNotificationListenerService : NotificationListenerService()

@@ -6,6 +6,7 @@ import '../../core/strings_ko.dart';
 import '../capture/kakao_capture_sync.dart';
 import '../debug/capture_test_runner.dart';
 import '../debug/capture_test_samples.dart';
+import 'android_settings_bridge.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -14,12 +15,59 @@ class SettingsScreen extends ConsumerStatefulWidget {
   ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends ConsumerState<SettingsScreen> {
-  bool _notifications = true;
-  bool _accessibility = true;
+class _SettingsScreenState extends ConsumerState<SettingsScreen>
+    with WidgetsBindingObserver {
+  final _androidSettings = AndroidSettingsBridge();
+
+  bool _notificationAccess = false;
+  bool _accessibilityAccess = false;
+  bool _openingSettings = false;
   bool _sendingTest = false;
   bool _syncingKakao = false;
   String _mode = StringsKo.settingModeLocal;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _refreshLocalPermissions();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _refreshLocalPermissions();
+    }
+  }
+
+  Future<void> _refreshLocalPermissions() async {
+    final state = await _androidSettings.readState();
+    if (!mounted) return;
+    setState(() {
+      _notificationAccess = state.notificationAccess;
+      _accessibilityAccess = state.accessibilityAccess;
+    });
+  }
+
+  Future<void> _openSystemSettings(Future<bool> Function() open) async {
+    if (_openingSettings) return;
+    setState(() => _openingSettings = true);
+    final messenger = ScaffoldMessenger.of(context);
+    final opened = await open();
+    if (!mounted) return;
+    setState(() => _openingSettings = false);
+    if (!opened) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text(StringsKo.settingOpenSettingsFailed)),
+      );
+    }
+  }
 
   Future<void> _sendTest(CaptureTestSample sample) async {
     if (_sendingTest) return;
@@ -87,59 +135,180 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             }),
           ),
           const SizedBox(height: 12),
-          SwitchListTile(
-            title: const Text(StringsKo.settingNotifications),
-            value: _notifications,
-            onChanged: (value) => setState(() => _notifications = value),
-          ),
-          SwitchListTile(
-            title: const Text(StringsKo.settingAccessibility),
-            value: _accessibility,
-            onChanged: (value) => setState(() => _accessibility = value),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            StringsKo.settingTestSection,
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              FilledButton.icon(
-                onPressed: _sendingTest
-                    ? null
-                    : () => _sendTest(CaptureTestSamples.gmail),
-                icon: const Icon(Icons.mail_outline),
-                label: const Text(StringsKo.sendGmailTest),
+          if (_mode == StringsKo.settingModeLocal)
+            _LocalSettingsSection(
+              notificationAccess: _notificationAccess,
+              accessibilityAccess: _accessibilityAccess,
+              openingSettings: _openingSettings,
+              onOpenNotificationSettings: () => _openSystemSettings(
+                _androidSettings.openNotificationAccessSettings,
               ),
-              FilledButton.tonalIcon(
-                onPressed: _sendingTest
-                    ? null
-                    : () => _sendTest(CaptureTestSamples.sms),
-                icon: const Icon(Icons.sms_outlined),
-                label: const Text(StringsKo.sendSmsTest),
+              onOpenAccessibilitySettings: () => _openSystemSettings(
+                _androidSettings.openAccessibilitySettings,
               ),
-              FilledButton.tonalIcon(
-                onPressed: _syncingKakao ? null : _syncKakao,
-                icon: _syncingKakao
-                    ? const SizedBox.square(
-                        dimension: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.sync),
-                label: const Text(StringsKo.userKakaoSync),
-              ),
-              OutlinedButton.icon(
-                onPressed: () => context.push('/debug/replay'),
-                icon: const Icon(Icons.science_outlined),
-                label: const Text(StringsKo.replayTitle),
-              ),
-            ],
-          ),
+            )
+          else
+            _TestSettingsSection(
+              sendingTest: _sendingTest,
+              syncingKakao: _syncingKakao,
+              onSendGmailTest: () => _sendTest(CaptureTestSamples.gmail),
+              onSendSmsTest: () => _sendTest(CaptureTestSamples.sms),
+              onSyncKakao: _syncKakao,
+            ),
         ],
       ),
+    );
+  }
+}
+
+class _LocalSettingsSection extends StatelessWidget {
+  final bool notificationAccess;
+  final bool accessibilityAccess;
+  final bool openingSettings;
+  final VoidCallback onOpenNotificationSettings;
+  final VoidCallback onOpenAccessibilitySettings;
+
+  const _LocalSettingsSection({
+    required this.notificationAccess,
+    required this.accessibilityAccess,
+    required this.openingSettings,
+    required this.onOpenNotificationSettings,
+    required this.onOpenAccessibilitySettings,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        _SystemPermissionTile(
+          title: StringsKo.settingNotifications,
+          value: notificationAccess,
+          icon: Icons.notifications_active_outlined,
+          hint: StringsKo.settingNotificationSystemHint,
+          openingSettings: openingSettings,
+          onOpenSettings: onOpenNotificationSettings,
+        ),
+        const SizedBox(height: 8),
+        _SystemPermissionTile(
+          title: StringsKo.settingAccessibility,
+          value: accessibilityAccess,
+          icon: Icons.accessibility_new_outlined,
+          hint: StringsKo.settingAccessibilitySystemHint,
+          openingSettings: openingSettings,
+          onOpenSettings: onOpenAccessibilitySettings,
+        ),
+      ],
+    );
+  }
+}
+
+class _SystemPermissionTile extends StatelessWidget {
+  final String title;
+  final bool value;
+  final IconData icon;
+  final String hint;
+  final bool openingSettings;
+  final VoidCallback onOpenSettings;
+
+  const _SystemPermissionTile({
+    required this.title,
+    required this.value,
+    required this.icon,
+    required this.hint,
+    required this.openingSettings,
+    required this.onOpenSettings,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final colors = Theme.of(context).colorScheme;
+    return SwitchListTile(
+      value: value,
+      onChanged: openingSettings ? null : (_) => onOpenSettings(),
+      secondary: Icon(icon),
+      title: Text(title),
+      subtitle: Padding(
+        padding: const EdgeInsets.only(top: 4),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              value
+                  ? StringsKo.settingPermissionOn
+                  : StringsKo.settingPermissionOff,
+            ),
+            const SizedBox(height: 2),
+            Text(
+              hint,
+              style: textTheme.bodySmall?.copyWith(
+                color: colors.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TestSettingsSection extends StatelessWidget {
+  final bool sendingTest;
+  final bool syncingKakao;
+  final VoidCallback onSendGmailTest;
+  final VoidCallback onSendSmsTest;
+  final VoidCallback onSyncKakao;
+
+  const _TestSettingsSection({
+    required this.sendingTest,
+    required this.syncingKakao,
+    required this.onSendGmailTest,
+    required this.onSendSmsTest,
+    required this.onSyncKakao,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          StringsKo.settingTestSection,
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            FilledButton.icon(
+              onPressed: sendingTest ? null : onSendGmailTest,
+              icon: const Icon(Icons.mail_outline),
+              label: const Text(StringsKo.sendGmailTest),
+            ),
+            FilledButton.tonalIcon(
+              onPressed: sendingTest ? null : onSendSmsTest,
+              icon: const Icon(Icons.sms_outlined),
+              label: const Text(StringsKo.sendSmsTest),
+            ),
+            FilledButton.tonalIcon(
+              onPressed: syncingKakao ? null : onSyncKakao,
+              icon: syncingKakao
+                  ? const SizedBox.square(
+                      dimension: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.sync),
+              label: const Text(StringsKo.userKakaoSync),
+            ),
+            OutlinedButton.icon(
+              onPressed: () => context.push('/debug/replay'),
+              icon: const Icon(Icons.science_outlined),
+              label: const Text(StringsKo.replayTitle),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }
