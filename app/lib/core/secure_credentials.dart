@@ -51,9 +51,15 @@ class SecureCredentialStore implements CredentialStore {
 
   @override
   Future<bool> has(CredentialSource source) async {
-    final hasAccount = await _storage.containsKey(key: _key(source, 'account'));
-    final hasSecret = await _storage.containsKey(key: _key(source, 'secret'));
-    return hasAccount && hasSecret;
+    try {
+      final hasAccount = await _storage.containsKey(
+        key: _key(source, 'account'),
+      );
+      final hasSecret = await _storage.containsKey(key: _key(source, 'secret'));
+      return hasAccount && hasSecret;
+    } catch (_) {
+      return false;
+    }
   }
 
   @override
@@ -75,17 +81,28 @@ class SecureCredentialStore implements CredentialStore {
     CredentialSource source,
     SourceCredential credential,
   ) async {
-    await _storage.write(
-      key: _key(source, 'account'),
-      value: credential.account,
-    );
-    await _storage.write(key: _key(source, 'secret'), value: credential.secret);
+    try {
+      await _storage.write(
+        key: _key(source, 'account'),
+        value: credential.account,
+      );
+      await _storage.write(
+        key: _key(source, 'secret'),
+        value: credential.secret,
+      );
+    } catch (_) {
+      return;
+    }
   }
 
   @override
   Future<void> delete(CredentialSource source) async {
-    await _storage.delete(key: _key(source, 'account'));
-    await _storage.delete(key: _key(source, 'secret'));
+    try {
+      await _storage.delete(key: _key(source, 'account'));
+      await _storage.delete(key: _key(source, 'secret'));
+    } catch (_) {
+      return;
+    }
   }
 
   String _key(CredentialSource source, String field) =>
@@ -100,7 +117,7 @@ class SecureSourceLabelStore implements SourceLabelStore {
   @override
   Future<String?> read(CredentialSource source) async {
     try {
-      return _storage.read(key: _key(source));
+      return await _storage.read(key: _key(source));
     } catch (_) {
       return null;
     }
@@ -108,12 +125,20 @@ class SecureSourceLabelStore implements SourceLabelStore {
 
   @override
   Future<void> write(CredentialSource source, String label) async {
-    await _storage.write(key: _key(source), value: label);
+    try {
+      await _storage.write(key: _key(source), value: label);
+    } catch (_) {
+      return;
+    }
   }
 
   @override
   Future<void> delete(CredentialSource source) async {
-    await _storage.delete(key: _key(source));
+    try {
+      await _storage.delete(key: _key(source));
+    } catch (_) {
+      return;
+    }
   }
 
   String _key(CredentialSource source) => 'source_label.${source.code}';

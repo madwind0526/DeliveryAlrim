@@ -60,13 +60,13 @@ abstract final class StringsKo {
   static const settingMode = '모드';
   static const settingModeLocal = '로컬';
   static const settingModeDebug = '테스트';
-  static const settingNotifications = '알림 수집';
+  static const settingNotifications = '알림 접근 권한';
   static const settingAccessibility = '카카오톡 접근성 수집';
   static const settingTestSection = '테스트';
   static const settingPermissionOn = '시스템 설정에서 허용됨';
   static const settingPermissionOff = '시스템 설정에서 허용 필요';
   static const settingNotificationSystemHint =
-      'Android 설정 > 알림 접근에서 배송알리미를 허용해야 합니다.';
+      'Android 설정 > 알림 접근에서 배송알리미를 허용합니다. 알림 자동 분류는 구현 중입니다.';
   static const settingAccessibilitySystemHint =
       'Android 설정 > 접근성 > 설치된 앱에서 배송알리미 카카오톡 수집을 켜야 합니다.';
   static const settingOpenSettingsFailed = '시스템 설정 화면을 열 수 없습니다';
@@ -127,6 +127,7 @@ abstract final class StringsKo {
   static const courierLabel = '택배사';
   static const trackingNumberLabel = '운송장번호';
   static const trackingNumberEmpty = '운송장번호를 입력해 주세요';
+  static const trackingNumberInvalid = '택배사에 맞는 운송장번호 형식이 아닙니다';
   static const productNameLabel = '상품명 (선택)';
   static const mallNameLabel = '쇼핑몰 (선택)';
   static const statusLabel = '배송 상태';

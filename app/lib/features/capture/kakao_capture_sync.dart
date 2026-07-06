@@ -18,9 +18,8 @@ class KakaoCaptureSync {
   KakaoCaptureSync(this._ref);
 
   Future<bool> syncLatest() async {
-    final snapshot = await _ref
-        .read(kakaoCaptureBridgeProvider)
-        .getLatestCapture();
+    final bridge = _ref.read(kakaoCaptureBridgeProvider);
+    final snapshot = await bridge.getLatestCapture();
     if (snapshot == null || !snapshot.isUsable) return false;
 
     final capturedAt = snapshot.capturedAt;
@@ -40,6 +39,7 @@ class KakaoCaptureSync {
     await _ref
         .read(parcelRepositoryProvider)
         .upsert(parcel, eventNote: '카카오톡 알림톡');
+    await bridge.clearLatestCapture();
     return true;
   }
 

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -111,31 +112,34 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
 
   @override
   Widget build(BuildContext context) {
+    final mode = kDebugMode ? _mode : StringsKo.settingModeLocal;
     return Scaffold(
       appBar: AppBar(title: const Text(StringsKo.settingTitle)),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          SegmentedButton<String>(
-            segments: const [
-              ButtonSegment(
-                value: StringsKo.settingModeLocal,
-                label: Text(StringsKo.settingModeLocal),
-                icon: Icon(Icons.storage),
-              ),
-              ButtonSegment(
-                value: StringsKo.settingModeDebug,
-                label: Text(StringsKo.settingModeDebug),
-                icon: Icon(Icons.science_outlined),
-              ),
-            ],
-            selected: {_mode},
-            onSelectionChanged: (value) => setState(() {
-              _mode = value.single;
-            }),
-          ),
-          const SizedBox(height: 12),
-          if (_mode == StringsKo.settingModeLocal)
+          if (kDebugMode) ...[
+            SegmentedButton<String>(
+              segments: const [
+                ButtonSegment(
+                  value: StringsKo.settingModeLocal,
+                  label: Text(StringsKo.settingModeLocal),
+                  icon: Icon(Icons.storage),
+                ),
+                ButtonSegment(
+                  value: StringsKo.settingModeDebug,
+                  label: Text(StringsKo.settingModeDebug),
+                  icon: Icon(Icons.science_outlined),
+                ),
+              ],
+              selected: {mode},
+              onSelectionChanged: (value) => setState(() {
+                _mode = value.single;
+              }),
+            ),
+            const SizedBox(height: 12),
+          ],
+          if (mode == StringsKo.settingModeLocal)
             _LocalSettingsSection(
               notificationAccess: _notificationAccess,
               accessibilityAccess: _accessibilityAccess,

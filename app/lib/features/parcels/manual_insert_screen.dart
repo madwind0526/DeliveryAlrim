@@ -51,7 +51,7 @@ class _ManualInsertScreenState extends ConsumerState<ManualInsertScreen> {
     final parcel = Parcel(
       id: '',
       courierCode: _courier.code,
-      trackingNumber: _trackingController.text.trim(),
+      trackingNumber: _normalizedTrackingNumber(_trackingController.text),
       status: _status,
       productName: _productController.text.trim().isEmpty
           ? null
@@ -95,7 +95,7 @@ class _ManualInsertScreenState extends ConsumerState<ManualInsertScreen> {
                       border: OutlineInputBorder(),
                     ),
                     items: [
-                      for (final c in Couriers.all)
+                      for (final c in Couriers.all.where((c) => !c.isDirect))
                         DropdownMenuItem(value: c, child: Text(c.nameKo)),
                     ],
                     onChanged: (c) => setState(() => _courier = c!),
@@ -107,9 +107,7 @@ class _ManualInsertScreenState extends ConsumerState<ManualInsertScreen> {
                       labelText: StringsKo.trackingNumberLabel,
                       border: OutlineInputBorder(),
                     ),
-                    validator: (v) => (v == null || v.trim().isEmpty)
-                        ? StringsKo.trackingNumberEmpty
-                        : null,
+                    validator: _validateTrackingNumber,
                   ),
                   const SizedBox(height: 12),
                   TextFormField(
@@ -178,4 +176,16 @@ class _ManualInsertScreenState extends ConsumerState<ManualInsertScreen> {
       ),
     );
   }
+
+  String? _validateTrackingNumber(String? value) {
+    final trackingNumber = _normalizedTrackingNumber(value);
+    if (trackingNumber.isEmpty) return StringsKo.trackingNumberEmpty;
+    if (!RegExp(_courier.invoicePattern).hasMatch(trackingNumber)) {
+      return StringsKo.trackingNumberInvalid;
+    }
+    return null;
+  }
+
+  String _normalizedTrackingNumber(String? value) =>
+      value?.replaceAll(RegExp(r'[-\s]'), '').trim() ?? '';
 }
