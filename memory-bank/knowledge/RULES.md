@@ -68,6 +68,12 @@
 **이유:** 공식 API로 사용자의 카카오톡 채널 대화 내역을 읽는 안정 경로가 없고, Android app sandbox 때문에 일반 앱은 카카오톡 private DB를 읽을 수 없다. 실기기 PoC에서 알림톡 본문 노드 추출은 성공했다.
 **적용 시점:** Kakao capture, Android accessibility service, channel fetcher 구현 시.
 
+## Flutter 입력 다이얼로그는 키보드 안전 구조 필수
+
+**규칙:** `AlertDialog`, modal, bottom sheet, form dialog에 텍스트 입력이 있거나 폼 필드가 2개 이상이면 본문을 `ConstrainedBox` + `SingleChildScrollView`로 감싼다. 높이는 `MediaQuery.viewInsets.bottom`을 반영해 키보드가 올라온 상태에서도 overflow가 나지 않게 제한한다.
+**이유:** Android 실기기에서 키보드와 큰 시스템 글꼴이 함께 적용되면 고정 `Column(mainAxisSize: min)` 다이얼로그가 반복적으로 `BOTTOM OVERFLOWED` 오류를 만든다.
+**적용 시점:** Flutter 입력 다이얼로그, 계정/비밀번호 입력, 소스 추가/수정, 필터/설정 입력 UI를 만들거나 수정할 때 항상.
+
 <!-- 예시 형식:
 
 ## [규칙 이름]
