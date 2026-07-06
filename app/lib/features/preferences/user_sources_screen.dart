@@ -359,6 +359,7 @@ class _AddSourceDialogState extends State<_AddSourceDialog> {
   final _accountController = TextEditingController();
   final _secretController = TextEditingController();
   late _SourceOption _selected;
+  bool _secretVisible = false;
 
   @override
   void initState() {
@@ -423,6 +424,7 @@ class _AddSourceDialogState extends State<_AddSourceDialog> {
                   _selected = option;
                   _accountController.clear();
                   _secretController.clear();
+                  _secretVisible = false;
                 });
               },
             ),
@@ -438,9 +440,22 @@ class _AddSourceDialogState extends State<_AddSourceDialog> {
               const SizedBox(height: 12),
               TextFormField(
                 controller: _secretController,
-                obscureText: true,
-                decoration: const InputDecoration(
+                obscureText: !_secretVisible,
+                decoration: InputDecoration(
                   labelText: StringsKo.userCredentialSecret,
+                  suffixIcon: IconButton(
+                    tooltip: _secretVisible
+                        ? StringsKo.userCredentialHideSecret
+                        : StringsKo.userCredentialShowSecret,
+                    icon: Icon(
+                      _secretVisible
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
+                    ),
+                    onPressed: () => setState(() {
+                      _secretVisible = !_secretVisible;
+                    }),
+                  ),
                 ),
                 validator: _required,
               ),
@@ -606,6 +621,7 @@ class _CredentialDialogState extends State<_CredentialDialog> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _accountController;
   late final TextEditingController _secretController;
+  bool _secretVisible = false;
 
   @override
   void initState() {
@@ -656,9 +672,22 @@ class _CredentialDialogState extends State<_CredentialDialog> {
             const SizedBox(height: 12),
             TextFormField(
               controller: _secretController,
-              obscureText: true,
-              decoration: const InputDecoration(
+              obscureText: !_secretVisible,
+              decoration: InputDecoration(
                 labelText: StringsKo.userCredentialSecret,
+                suffixIcon: IconButton(
+                  tooltip: _secretVisible
+                      ? StringsKo.userCredentialHideSecret
+                      : StringsKo.userCredentialShowSecret,
+                  icon: Icon(
+                    _secretVisible
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined,
+                  ),
+                  onPressed: () => setState(() {
+                    _secretVisible = !_secretVisible;
+                  }),
+                ),
               ),
               validator: _required,
             ),

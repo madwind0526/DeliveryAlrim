@@ -72,6 +72,8 @@ abstract final class StringsKo {
   static const userCredentialTitle = '로그인 정보';
   static const userCredentialAccount = '계정';
   static const userCredentialSecret = '비밀번호 또는 토큰';
+  static const userCredentialShowSecret = '비밀번호 보기';
+  static const userCredentialHideSecret = '비밀번호 숨기기';
   static const userCredentialSave = '저장';
   static const userCredentialDelete = '삭제';
   static const userCredentialSavedSnack = '로그인 정보를 암호화 저장했습니다';
