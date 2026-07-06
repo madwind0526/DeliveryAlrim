@@ -14,26 +14,37 @@
 
 모든 Flutter `AlertDialog`, modal, bottom sheet, form dialog는 키보드가 올라온 상태와 큰 시스템 글꼴을 기준으로 검증한다.
 
-폼 필드가 2개 이상 있거나 텍스트 입력이 포함된 다이얼로그는 본문을 고정 `Column`만으로 만들지 않는다. 다음 구조를 기본으로 사용한다.
+폼 필드가 2개 이상 있거나 텍스트 입력이 포함된 다이얼로그는 본문을 고정 `Column`만으로 만들지 않는다. `AlertDialog`에 스크롤 본문만 끼워 넣는 방식도 큰 시스템 글꼴에서 내용이 사라질 수 있으므로, 크기를 명시한 `Dialog` shell을 기본으로 사용한다.
 
 ```dart
 final media = MediaQuery.of(context);
-final maxContentHeight = (media.size.height - media.viewInsets.bottom - 220)
-    .clamp(220.0, 420.0);
+final dialogWidth = (media.size.width - 48).clamp(280.0, 560.0).toDouble();
+final dialogMaxHeight = (media.size.height - media.viewInsets.bottom - 96)
+    .clamp(280.0, 560.0)
+    .toDouble();
 
-return AlertDialog(
+return Dialog(
   insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-  content: ConstrainedBox(
-    constraints: BoxConstraints(maxHeight: maxContentHeight),
-    child: SingleChildScrollView(
-      child: Form(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // form fields
-          ],
+  child: ConstrainedBox(
+    constraints: BoxConstraints(maxWidth: dialogWidth, maxHeight: dialogMaxHeight),
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // title
+        Flexible(
+          child: SingleChildScrollView(
+            child: Form(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // form fields
+                ],
+              ),
+            ),
+          ),
         ),
-      ),
+        // actions
+      ],
     ),
   ),
 );

@@ -425,95 +425,86 @@ class _AddSourceDialogState extends State<_AddSourceDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final media = MediaQuery.of(context);
-    final maxContentHeight = (media.size.height - media.viewInsets.bottom - 220)
-        .clamp(220.0, 420.0);
-    return AlertDialog(
-      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-      title: const AdaptiveText(StringsKo.addSourceTitle),
-      content: ConstrainedBox(
-        constraints: BoxConstraints(maxHeight: maxContentHeight),
-        child: SingleChildScrollView(
-          child: Form(
-            key: _formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                DropdownButtonFormField<_SourceOption>(
-                  initialValue: _selected,
-                  decoration: const InputDecoration(
-                    labelText: StringsKo.channelLabel,
-                  ),
-                  items: [
-                    for (final option in widget.options)
-                      DropdownMenuItem(
-                        value: option,
-                        child: Row(
-                          children: [
-                            Icon(option.icon, size: 20),
-                            const SizedBox(width: 8),
-                            AdaptiveText(option.label),
-                          ],
-                        ),
-                      ),
-                  ],
-                  onChanged: (option) {
-                    if (option == null) return;
-                    setState(() {
-                      _selected = option;
-                      _labelController.clear();
-                      _accountController.clear();
-                      _secretController.clear();
-                      _secretVisible = false;
-                    });
-                  },
-                ),
-                if (_needsDisplayName) ...[
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _labelController,
-                    decoration: const InputDecoration(
-                      labelText: StringsKo.sourceDisplayName,
-                      hintText: StringsKo.sourceDisplayNameHint,
+    return _KeyboardSafeDialogShell(
+      title: StringsKo.addSourceTitle,
+      content: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            DropdownButtonFormField<_SourceOption>(
+              initialValue: _selected,
+              decoration: const InputDecoration(
+                labelText: StringsKo.channelLabel,
+              ),
+              items: [
+                for (final option in widget.options)
+                  DropdownMenuItem(
+                    value: option,
+                    child: Row(
+                      children: [
+                        Icon(option.icon, size: 20),
+                        const SizedBox(width: 8),
+                        Text(option.label),
+                      ],
                     ),
-                    validator: _requiredDisplayName,
                   ),
-                ],
-                if (_needsCredential) ...[
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _accountController,
-                    decoration: const InputDecoration(
-                      labelText: StringsKo.userCredentialAccount,
-                    ),
-                    validator: _required,
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _secretController,
-                    obscureText: !_secretVisible,
-                    decoration: InputDecoration(
-                      labelText: StringsKo.userCredentialSecret,
-                      suffixIcon: IconButton(
-                        tooltip: _secretVisible
-                            ? StringsKo.userCredentialHideSecret
-                            : StringsKo.userCredentialShowSecret,
-                        icon: Icon(
-                          _secretVisible
-                              ? Icons.visibility_off_outlined
-                              : Icons.visibility_outlined,
-                        ),
-                        onPressed: () => setState(() {
-                          _secretVisible = !_secretVisible;
-                        }),
-                      ),
-                    ),
-                    validator: _required,
-                  ),
-                ],
               ],
+              onChanged: (option) {
+                if (option == null) return;
+                setState(() {
+                  _selected = option;
+                  _labelController.clear();
+                  _accountController.clear();
+                  _secretController.clear();
+                  _secretVisible = false;
+                });
+              },
             ),
-          ),
+            if (_needsDisplayName) ...[
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _labelController,
+                decoration: const InputDecoration(
+                  labelText: StringsKo.sourceDisplayName,
+                  hintText: StringsKo.sourceDisplayNameHint,
+                ),
+                validator: _requiredDisplayName,
+              ),
+            ],
+            if (_needsCredential) ...[
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _accountController,
+                decoration: const InputDecoration(
+                  labelText: StringsKo.userCredentialAccount,
+                ),
+                validator: _required,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _secretController,
+                obscureText: !_secretVisible,
+                decoration: InputDecoration(
+                  labelText: StringsKo.userCredentialSecret,
+                  suffixIcon: IconButton(
+                    tooltip: _secretVisible
+                        ? StringsKo.userCredentialHideSecret
+                        : StringsKo.userCredentialShowSecret,
+                    icon: Icon(
+                      _secretVisible
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
+                    ),
+                    onPressed: () => setState(() {
+                      _secretVisible = !_secretVisible;
+                    }),
+                  ),
+                ),
+                validator: _required,
+              ),
+            ],
+          ],
         ),
       ),
       actions: [
@@ -711,54 +702,43 @@ class _CredentialDialogState extends State<_CredentialDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final media = MediaQuery.of(context);
-    final maxContentHeight = (media.size.height - media.viewInsets.bottom - 220)
-        .clamp(220.0, 420.0);
-    return AlertDialog(
-      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-      title: AdaptiveText(
-        '${widget.sourceLabel} ${StringsKo.userCredentialTitle}',
-      ),
-      content: ConstrainedBox(
-        constraints: BoxConstraints(maxHeight: maxContentHeight),
-        child: SingleChildScrollView(
-          child: Form(
-            key: _formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextFormField(
-                  controller: _accountController,
-                  decoration: const InputDecoration(
-                    labelText: StringsKo.userCredentialAccount,
-                  ),
-                  validator: _required,
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _secretController,
-                  obscureText: !_secretVisible,
-                  decoration: InputDecoration(
-                    labelText: StringsKo.userCredentialSecret,
-                    suffixIcon: IconButton(
-                      tooltip: _secretVisible
-                          ? StringsKo.userCredentialHideSecret
-                          : StringsKo.userCredentialShowSecret,
-                      icon: Icon(
-                        _secretVisible
-                            ? Icons.visibility_off_outlined
-                            : Icons.visibility_outlined,
-                      ),
-                      onPressed: () => setState(() {
-                        _secretVisible = !_secretVisible;
-                      }),
-                    ),
-                  ),
-                  validator: _required,
-                ),
-              ],
+    return _KeyboardSafeDialogShell(
+      title: '${widget.sourceLabel} ${StringsKo.userCredentialTitle}',
+      content: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextFormField(
+              controller: _accountController,
+              decoration: const InputDecoration(
+                labelText: StringsKo.userCredentialAccount,
+              ),
+              validator: _required,
             ),
-          ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _secretController,
+              obscureText: !_secretVisible,
+              decoration: InputDecoration(
+                labelText: StringsKo.userCredentialSecret,
+                suffixIcon: IconButton(
+                  tooltip: _secretVisible
+                      ? StringsKo.userCredentialHideSecret
+                      : StringsKo.userCredentialShowSecret,
+                  icon: Icon(
+                    _secretVisible
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined,
+                  ),
+                  onPressed: () => setState(() {
+                    _secretVisible = !_secretVisible;
+                  }),
+                ),
+              ),
+              validator: _required,
+            ),
+          ],
         ),
       ),
       actions: [
@@ -784,6 +764,65 @@ class _CredentialDialogState extends State<_CredentialDialog> {
   String? _required(String? value) => value == null || value.trim().isEmpty
       ? StringsKo.userCredentialRequired
       : null;
+}
+
+class _KeyboardSafeDialogShell extends StatelessWidget {
+  final String title;
+  final Widget content;
+  final List<Widget> actions;
+
+  const _KeyboardSafeDialogShell({
+    required this.title,
+    required this.content,
+    required this.actions,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final media = MediaQuery.of(context);
+    final dialogWidth = (media.size.width - 48).clamp(280.0, 560.0).toDouble();
+    final dialogMaxHeight = (media.size.height - media.viewInsets.bottom - 96)
+        .clamp(280.0, 560.0)
+        .toDouble();
+    final textTheme = Theme.of(context).textTheme;
+
+    return Dialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: dialogWidth,
+          maxHeight: dialogMaxHeight,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: textTheme.headlineSmall,
+              ),
+              const SizedBox(height: 16),
+              Flexible(child: SingleChildScrollView(child: content)),
+              const SizedBox(height: 16),
+              Align(
+                alignment: Alignment.centerRight,
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  alignment: WrapAlignment.end,
+                  children: actions,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _SectionHeader extends StatelessWidget {

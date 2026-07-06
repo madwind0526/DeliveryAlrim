@@ -70,8 +70,8 @@
 
 ## Flutter 입력 다이얼로그는 키보드 안전 구조 필수
 
-**규칙:** `AlertDialog`, modal, bottom sheet, form dialog에 텍스트 입력이 있거나 폼 필드가 2개 이상이면 본문을 `ConstrainedBox` + `SingleChildScrollView`로 감싼다. 높이는 `MediaQuery.viewInsets.bottom`을 반영해 키보드가 올라온 상태에서도 overflow가 나지 않게 제한한다.
-**이유:** Android 실기기에서 키보드와 큰 시스템 글꼴이 함께 적용되면 고정 `Column(mainAxisSize: min)` 다이얼로그가 반복적으로 `BOTTOM OVERFLOWED` 오류를 만든다.
+**규칙:** `AlertDialog`, modal, bottom sheet, form dialog에 텍스트 입력이 있거나 폼 필드가 2개 이상이면 명시적 크기 제한과 스크롤 본문을 함께 둔다. Flutter에서는 큰 글꼴 환경에서 `AlertDialog` + 스크롤 본문 조합이 내용 없는 barrier만 띄운 사례가 있으므로, 입력 폼은 `Dialog` + `ConstrainedBox(maxWidth/maxHeight)` + `Flexible(SingleChildScrollView)` 구조를 우선 사용한다. 높이는 `MediaQuery.viewInsets.bottom`을 반영해 키보드가 올라온 상태에서도 overflow가 나지 않게 제한한다.
+**이유:** Android 실기기에서 키보드와 큰 시스템 글꼴이 함께 적용되면 고정 `Column(mainAxisSize: min)` 다이얼로그가 반복적으로 `BOTTOM OVERFLOWED` 오류를 만들고, `AlertDialog` 내부 크기 계산도 내용이 보이지 않는 상태를 만들 수 있다.
 **적용 시점:** Flutter 입력 다이얼로그, 계정/비밀번호 입력, 소스 추가/수정, 필터/설정 입력 UI를 만들거나 수정할 때 항상.
 
 <!-- 예시 형식:
