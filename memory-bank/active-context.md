@@ -10,6 +10,7 @@
 - Gmail/SMS 샘플 자동 주입 테스트가 User 화면과 디버그 주입 화면에서 같은 `RuleEngine → ParcelRepository` 경로로 동작함
 - User 화면 초기 표시는 Gmail/카카오톡만 유지하고, 기타 이메일/SMS/텔레그램/WhatsApp은 `추가` 버튼 선택 후 표시됨
 - 이메일/SNS 추가 다이얼로그는 소스 선택과 로그인 정보 입력을 한 번에 처리하고, 기존 행의 로그인 버튼은 수정/삭제용으로 유지됨
+- Windows 테스트 창은 휴대폰 세로 화면에 가깝게 430x932 기본 크기로 실행됨
 - Play Store 배포는 현재 목표가 아니며, 모니터링 앱 로그인 정보는 로컬 secure storage에 항상 암호화 저장
 - Gmail/카카오톡 계정 정보는 사용자가 앱에서 입력 완료
 - 다음: 실제 Gmail OAuth/IMAP 연결, Android SMS 권한/수신 연결, 카카오톡 계정 활용 범위 정리, 배터리 최적화/릴리즈 APK 하드닝
