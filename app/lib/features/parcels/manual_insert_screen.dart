@@ -5,18 +5,17 @@ import 'package:intl/intl.dart';
 import '../../core/constants/couriers.dart';
 import '../../core/providers.dart';
 import '../../core/strings_ko.dart';
-import '../parcels/models/parcel.dart';
+import 'models/parcel.dart';
 
-/// Debug-only manual parcel entry. Stands in for automatic capture
-/// until the notification/fixture pipeline lands in Wave 2.
-class DebugInsertScreen extends ConsumerStatefulWidget {
-  const DebugInsertScreen({super.key});
+/// Manual parcel entry for deliveries that automatic capture misses.
+class ManualInsertScreen extends ConsumerStatefulWidget {
+  const ManualInsertScreen({super.key});
 
   @override
-  ConsumerState<DebugInsertScreen> createState() => _DebugInsertScreenState();
+  ConsumerState<ManualInsertScreen> createState() => _ManualInsertScreenState();
 }
 
-class _DebugInsertScreenState extends ConsumerState<DebugInsertScreen> {
+class _ManualInsertScreenState extends ConsumerState<ManualInsertScreen> {
   final _formKey = GlobalKey<FormState>();
   final _trackingController = TextEditingController();
   final _productController = TextEditingController();
@@ -78,7 +77,7 @@ class _DebugInsertScreenState extends ConsumerState<DebugInsertScreen> {
   Widget build(BuildContext context) {
     final bottomPadding = MediaQuery.paddingOf(context).bottom + 24;
     return Scaffold(
-      appBar: AppBar(title: const Text(StringsKo.debugInsertTitle)),
+      appBar: AppBar(title: const Text(StringsKo.manualInsertTitle)),
       body: SafeArea(
         top: false,
         child: Center(

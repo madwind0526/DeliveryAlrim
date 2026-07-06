@@ -136,11 +136,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 icon: const Icon(Icons.science_outlined),
                 label: const Text(StringsKo.replayTitle),
               ),
-              OutlinedButton.icon(
-                onPressed: () => context.push('/debug/insert'),
-                icon: const Icon(Icons.add),
-                label: const Text(StringsKo.debugInsertTitle),
-              ),
             ],
           ),
         ],

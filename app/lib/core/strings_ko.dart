@@ -115,8 +115,8 @@ abstract final class StringsKo {
   static const registeredSnack = '배송 목록에 등록되었습니다';
   static const rulesLoadError = '파싱 규칙을 불러오지 못했습니다';
 
-  // Debug insert
-  static const debugInsertTitle = '배송 수동 등록 (디버그)';
+  // Manual insert
+  static const manualInsertTitle = '배송 수동 등록';
   static const courierLabel = '택배사';
   static const trackingNumberLabel = '운송장번호';
   static const trackingNumberEmpty = '운송장번호를 입력해 주세요';

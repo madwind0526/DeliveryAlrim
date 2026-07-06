@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../features/calendar/calendar_screen.dart';
-import '../features/debug/debug_insert_screen.dart';
 import '../features/debug/replay_screen.dart';
 import '../features/daily/today_dashboard_screen.dart';
 import '../features/preferences/filter_screen.dart';
@@ -11,6 +10,7 @@ import '../features/preferences/settings_screen.dart';
 import '../features/preferences/user_sources_screen.dart';
 import '../features/parcels/parcel_detail_screen.dart';
 import '../features/parcels/parcel_list_screen.dart';
+import '../features/parcels/manual_insert_screen.dart';
 import 'adaptive_text.dart';
 import 'app_info.dart';
 import 'strings_ko.dart';
@@ -72,8 +72,8 @@ final routerProvider = Provider<GoRouter>((ref) {
             ParcelDetailScreen(parcelId: state.pathParameters['id']!),
       ),
       GoRoute(
-        path: '/debug/insert',
-        builder: (_, _) => const DebugInsertScreen(),
+        path: '/parcels/new',
+        builder: (_, _) => const ManualInsertScreen(),
       ),
       GoRoute(path: '/debug/replay', builder: (_, _) => const ReplayScreen()),
     ],

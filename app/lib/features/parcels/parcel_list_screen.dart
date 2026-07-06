@@ -88,6 +88,11 @@ class _ParcelListScreenState extends ConsumerState<ParcelListScreen> {
             ),
           ],
         ),
+        floatingActionButton: FloatingActionButton(
+          tooltip: StringsKo.manualInsertTitle,
+          onPressed: () => context.push('/parcels/new'),
+          child: const Icon(Icons.add),
+        ),
       ),
     );
   }
