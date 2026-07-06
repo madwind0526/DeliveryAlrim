@@ -92,7 +92,7 @@ class _UserSourcesScreenState extends ConsumerState<UserSourcesScreen> {
 
     if (result.delete) {
       await store.delete(source);
-      await _loadCredentialStates();
+      _setCredentialStored(source, false);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text(StringsKo.userCredentialDeletedSnack)),
@@ -104,7 +104,7 @@ class _UserSourcesScreenState extends ConsumerState<UserSourcesScreen> {
       source,
       SourceCredential(account: result.account, secret: result.secret),
     );
-    await _loadCredentialStates();
+    _setCredentialStored(source, true);
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text(StringsKo.userCredentialSavedSnack)),
@@ -143,6 +143,7 @@ class _UserSourcesScreenState extends ConsumerState<UserSourcesScreen> {
     if (displayLabel != null && labelSource != null) {
       await ref.read(sourceLabelStoreProvider).write(labelSource, displayLabel);
       if (!mounted) return;
+      _setSourceLabel(labelSource, displayLabel);
     }
     final credential = result.credential;
     final credentialSource = result.option.credentialSource;
@@ -154,11 +155,48 @@ class _UserSourcesScreenState extends ConsumerState<UserSourcesScreen> {
     }
 
     await ref.read(credentialStoreProvider).write(credentialSource, credential);
-    await _loadCredentialStates();
+    _setCredentialStored(credentialSource, true);
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text(StringsKo.userCredentialSavedSnack)),
     );
+  }
+
+  void _setCredentialStored(CredentialSource source, bool stored) {
+    if (!mounted) return;
+    setState(() {
+      final next = {..._storedCredentials};
+      if (stored) {
+        next.add(source);
+      } else {
+        next.remove(source);
+      }
+      _storedCredentials = next;
+      _syncOptionalVisibility(source, stored);
+    });
+  }
+
+  void _setSourceLabel(CredentialSource source, String label) {
+    if (!mounted) return;
+    setState(() {
+      if (source == CredentialSource.otherEmail) {
+        _otherEmailLabel = _cleanLabel(label, '기타 이메일');
+      }
+    });
+  }
+
+  void _syncOptionalVisibility(CredentialSource source, bool stored) {
+    switch (source) {
+      case CredentialSource.otherEmail:
+        _otherEmailVisible = stored || _otherEmailEnabled;
+      case CredentialSource.telegram:
+        _telegramVisible = stored || _telegramEnabled;
+      case CredentialSource.whatsapp:
+        _whatsappVisible = stored || _whatsappEnabled;
+      case CredentialSource.gmail:
+      case CredentialSource.kakao:
+        break;
+    }
   }
 
   @override
