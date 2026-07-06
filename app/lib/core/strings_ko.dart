@@ -62,6 +62,7 @@ abstract final class StringsKo {
   static const settingModeDebug = '테스트';
   static const settingNotifications = '알림 수집';
   static const settingAccessibility = '카카오톡 접근성 수집';
+  static const settingTestSection = '테스트';
   static const userTitle = '사용자';
   static const userEmailSection = '이메일 모니터링';
   static const userSmsSection = '문자 모니터링';

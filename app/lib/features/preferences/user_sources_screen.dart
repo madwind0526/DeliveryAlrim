@@ -4,9 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/adaptive_text.dart';
 import '../../core/secure_credentials.dart';
 import '../../core/strings_ko.dart';
-import '../capture/kakao_capture_sync.dart';
-import '../debug/capture_test_runner.dart';
-import '../debug/capture_test_samples.dart';
 
 class UserSourcesScreen extends ConsumerStatefulWidget {
   const UserSourcesScreen({super.key});
@@ -26,8 +23,6 @@ class _UserSourcesScreenState extends ConsumerState<UserSourcesScreen> {
   bool _telegramVisible = false;
   bool _whatsappEnabled = false;
   bool _whatsappVisible = false;
-  bool _syncingKakao = false;
-  bool _sendingTest = false;
   String _otherEmailLabel = '기타 이메일';
   Set<CredentialSource> _storedCredentials = {};
 
@@ -62,46 +57,6 @@ class _UserSourcesScreenState extends ConsumerState<UserSourcesScreen> {
       _whatsappVisible = entries[4];
       _otherEmailLabel = _cleanLabel(otherEmailLabel, '기타 이메일');
     });
-  }
-
-  Future<void> _syncKakao() async {
-    if (_syncingKakao) return;
-    setState(() => _syncingKakao = true);
-    final messenger = ScaffoldMessenger.of(context);
-    try {
-      final synced = await ref.read(kakaoCaptureSyncProvider).syncLatest();
-      if (!mounted) return;
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(
-            synced ? StringsKo.userKakaoSyncDone : StringsKo.userKakaoSyncEmpty,
-          ),
-        ),
-      );
-    } finally {
-      if (mounted) setState(() => _syncingKakao = false);
-    }
-  }
-
-  Future<void> _sendTest(CaptureTestSample sample) async {
-    if (_sendingTest) return;
-    setState(() => _sendingTest = true);
-    final messenger = ScaffoldMessenger.of(context);
-    try {
-      final outcome = await ref.read(captureTestRunnerProvider).send(sample);
-      if (!mounted) return;
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(
-            outcome.result.matched
-                ? StringsKo.testSendRegistered
-                : StringsKo.testSendRejected,
-          ),
-        ),
-      );
-    } finally {
-      if (mounted) setState(() => _sendingTest = false);
-    }
   }
 
   Future<void> _openCredentialDialog(
@@ -255,12 +210,6 @@ class _UserSourcesScreenState extends ConsumerState<UserSourcesScreen> {
               value: _smsEnabled,
               onChanged: (value) => setState(() => _smsEnabled = value),
             ),
-          _SourceTestPanel(
-            sending: _sendingTest,
-            onSendGmail: () => _sendTest(CaptureTestSamples.gmail),
-            onSendSms: () => _sendTest(CaptureTestSamples.sms),
-          ),
-          const SizedBox(height: 12),
           _SectionHeader(
             title: StringsKo.userSnsSection,
             icon: Icons.chat_bubble_outline,
@@ -324,19 +273,6 @@ class _UserSourcesScreenState extends ConsumerState<UserSourcesScreen> {
               onCredentialPressed: () =>
                   _openCredentialDialog(CredentialSource.whatsapp, 'WhatsApp'),
             ),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: FilledButton.icon(
-              onPressed: _syncingKakao || !_kakaoEnabled ? null : _syncKakao,
-              icon: _syncingKakao
-                  ? const SizedBox.square(
-                      dimension: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.sync),
-              label: const AdaptiveText(StringsKo.userKakaoSync),
-            ),
-          ),
         ],
       ),
     );
@@ -549,41 +485,6 @@ class _CredentialNotice extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _SourceTestPanel extends StatelessWidget {
-  final bool sending;
-  final VoidCallback onSendGmail;
-  final VoidCallback onSendSms;
-
-  const _SourceTestPanel({
-    required this.sending,
-    required this.onSendGmail,
-    required this.onSendSms,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 4, bottom: 8),
-      child: Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        children: [
-          OutlinedButton.icon(
-            onPressed: sending ? null : onSendGmail,
-            icon: const Icon(Icons.mail_outline),
-            label: const AdaptiveText(StringsKo.sendGmailTest),
-          ),
-          OutlinedButton.icon(
-            onPressed: sending ? null : onSendSms,
-            icon: const Icon(Icons.sms_outlined),
-            label: const AdaptiveText(StringsKo.sendSmsTest),
-          ),
-        ],
-      ),
     );
   }
 }

@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -67,12 +66,6 @@ class _ParcelListScreenState extends ConsumerState<ParcelListScreen> {
               icon: const Icon(Icons.storefront_outlined),
               onPressed: () => _showCompanyPicker(context),
             ),
-            if (kDebugMode)
-              IconButton(
-                tooltip: StringsKo.replayTitle,
-                icon: const Icon(Icons.science_outlined),
-                onPressed: () => context.push('/debug/replay'),
-              ),
           ],
           bottom: const TabBar(
             tabs: [
@@ -95,14 +88,6 @@ class _ParcelListScreenState extends ConsumerState<ParcelListScreen> {
             ),
           ],
         ),
-        // Manual insert is a development aid only; capture is automatic
-        // in the real flow, so the FAB exists only in debug builds.
-        floatingActionButton: kDebugMode
-            ? FloatingActionButton(
-                onPressed: () => context.push('/debug/insert'),
-                child: const Icon(Icons.add),
-              )
-            : null,
       ),
     );
   }

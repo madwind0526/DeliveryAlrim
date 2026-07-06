@@ -6,8 +6,6 @@ import '../../core/providers.dart';
 import '../../core/strings_ko.dart';
 import '../capture/capture_models.dart';
 import '../capture/rules_provider.dart';
-import 'capture_test_runner.dart';
-import 'capture_test_samples.dart';
 
 /// Debug-only injection screen: paste any notification/SMS/email text,
 /// run the rule engine, inspect the result, and optionally register it.
@@ -30,7 +28,6 @@ class _ReplayScreenState extends ConsumerState<ReplayScreen> {
   RawCapture? _lastCapture;
   ParseResult? _lastResult;
   bool _registered = false;
-  bool _sendingTest = false;
 
   @override
   void dispose() {
@@ -82,179 +79,97 @@ class _ReplayScreenState extends ConsumerState<ReplayScreen> {
     ).showSnackBar(const SnackBar(content: Text(StringsKo.registeredSnack)));
   }
 
-  Future<void> _sendTest(CaptureTestSample sample) async {
-    if (_sendingTest) return;
-    setState(() => _sendingTest = true);
-    final messenger = ScaffoldMessenger.of(context);
-    try {
-      final outcome = await ref.read(captureTestRunnerProvider).send(sample);
-      final capture = outcome.capture;
-      _channel = capture.channel;
-      _packageController.text = capture.packageName ?? '';
-      _senderController.text = capture.sender ?? '';
-      _titleController.text = capture.title ?? '';
-      _bodyController.text = capture.body;
-
-      if (!mounted) return;
-      setState(() {
-        _lastCapture = capture;
-        _lastResult = outcome.result;
-        _registered = outcome.result.matched;
-      });
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(
-            outcome.result.matched
-                ? StringsKo.testSendRegistered
-                : StringsKo.testSendRejected,
-          ),
-        ),
-      );
-    } finally {
-      if (mounted) setState(() => _sendingTest = false);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
+    final bottomPadding = MediaQuery.paddingOf(context).bottom + 24;
     return Scaffold(
       appBar: AppBar(title: const Text(StringsKo.replayTitle)),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 560),
-          child: Form(
-            key: _formKey,
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                _AutoTestPanel(
-                  sending: _sendingTest,
-                  onSendGmail: () => _sendTest(CaptureTestSamples.gmail),
-                  onSendSms: () => _sendTest(CaptureTestSamples.sms),
-                ),
-                const SizedBox(height: 16),
-                DropdownButtonFormField<CaptureChannel>(
-                  key: ValueKey(_channel),
-                  initialValue: _channel,
-                  decoration: const InputDecoration(
-                    labelText: StringsKo.channelLabel,
-                    border: OutlineInputBorder(),
+      body: SafeArea(
+        top: false,
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 560),
+            child: Form(
+              key: _formKey,
+              child: ListView(
+                padding: EdgeInsets.fromLTRB(16, 16, 16, bottomPadding),
+                children: [
+                  DropdownButtonFormField<CaptureChannel>(
+                    key: ValueKey(_channel),
+                    initialValue: _channel,
+                    decoration: const InputDecoration(
+                      labelText: StringsKo.channelLabel,
+                      border: OutlineInputBorder(),
+                    ),
+                    items: [
+                      for (final c in CaptureChannel.values)
+                        DropdownMenuItem(value: c, child: Text(c.labelKo)),
+                    ],
+                    onChanged: (c) => setState(() => _channel = c!),
                   ),
-                  items: [
-                    for (final c in CaptureChannel.values)
-                      DropdownMenuItem(value: c, child: Text(c.labelKo)),
-                  ],
-                  onChanged: (c) => setState(() => _channel = c!),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _packageController,
-                        decoration: const InputDecoration(
-                          labelText: StringsKo.packageNameLabel,
-                          border: OutlineInputBorder(),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: _packageController,
+                          decoration: const InputDecoration(
+                            labelText: StringsKo.packageNameLabel,
+                            border: OutlineInputBorder(),
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: TextFormField(
-                        controller: _senderController,
-                        decoration: const InputDecoration(
-                          labelText: StringsKo.senderLabel,
-                          border: OutlineInputBorder(),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: TextFormField(
+                          controller: _senderController,
+                          decoration: const InputDecoration(
+                            labelText: StringsKo.senderLabel,
+                            border: OutlineInputBorder(),
+                          ),
                         ),
                       ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _titleController,
+                    decoration: const InputDecoration(
+                      labelText: StringsKo.notifTitleLabel,
+                      border: OutlineInputBorder(),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _titleController,
-                  decoration: const InputDecoration(
-                    labelText: StringsKo.notifTitleLabel,
-                    border: OutlineInputBorder(),
                   ),
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _bodyController,
-                  decoration: const InputDecoration(
-                    labelText: StringsKo.bodyLabel,
-                    border: OutlineInputBorder(),
-                    alignLabelWithHint: true,
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _bodyController,
+                    decoration: const InputDecoration(
+                      labelText: StringsKo.bodyLabel,
+                      border: OutlineInputBorder(),
+                      alignLabelWithHint: true,
+                    ),
+                    maxLines: 10,
+                    validator: (v) => (v == null || v.trim().isEmpty)
+                        ? StringsKo.bodyEmpty
+                        : null,
                   ),
-                  maxLines: 10,
-                  validator: (v) => (v == null || v.trim().isEmpty)
-                      ? StringsKo.bodyEmpty
-                      : null,
-                ),
-                const SizedBox(height: 16),
-                FilledButton.icon(
-                  onPressed: _runParse,
-                  icon: const Icon(Icons.play_arrow),
-                  label: const Text(StringsKo.runParse),
-                ),
-                if (_lastResult != null) ...[
                   const SizedBox(height: 16),
-                  _ResultCard(
-                    result: _lastResult!,
-                    registered: _registered,
-                    onRegister: _register,
+                  FilledButton.icon(
+                    onPressed: _runParse,
+                    icon: const Icon(Icons.play_arrow),
+                    label: const Text(StringsKo.runParse),
                   ),
+                  if (_lastResult != null) ...[
+                    const SizedBox(height: 16),
+                    _ResultCard(
+                      result: _lastResult!,
+                      registered: _registered,
+                      onRegister: _register,
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _AutoTestPanel extends StatelessWidget {
-  final bool sending;
-  final VoidCallback onSendGmail;
-  final VoidCallback onSendSms;
-
-  const _AutoTestPanel({
-    required this.sending,
-    required this.onSendGmail,
-    required this.onSendSms,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              StringsKo.autoTestTitle,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                FilledButton.icon(
-                  onPressed: sending ? null : onSendGmail,
-                  icon: const Icon(Icons.mail_outline),
-                  label: const Text(StringsKo.sendGmailTest),
-                ),
-                FilledButton.tonalIcon(
-                  onPressed: sending ? null : onSendSms,
-                  icon: const Icon(Icons.sms_outlined),
-                  label: const Text(StringsKo.sendSmsTest),
-                ),
-              ],
-            ),
-          ],
         ),
       ),
     );

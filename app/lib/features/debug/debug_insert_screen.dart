@@ -76,99 +76,103 @@ class _DebugInsertScreenState extends ConsumerState<DebugInsertScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final bottomPadding = MediaQuery.paddingOf(context).bottom + 24;
     return Scaffold(
       appBar: AppBar(title: const Text(StringsKo.debugInsertTitle)),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 480),
-          child: Form(
-            key: _formKey,
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                DropdownButtonFormField<Courier>(
-                  initialValue: _courier,
-                  decoration: const InputDecoration(
-                    labelText: StringsKo.courierLabel,
-                    border: OutlineInputBorder(),
+      body: SafeArea(
+        top: false,
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: Form(
+              key: _formKey,
+              child: ListView(
+                padding: EdgeInsets.fromLTRB(16, 16, 16, bottomPadding),
+                children: [
+                  DropdownButtonFormField<Courier>(
+                    initialValue: _courier,
+                    decoration: const InputDecoration(
+                      labelText: StringsKo.courierLabel,
+                      border: OutlineInputBorder(),
+                    ),
+                    items: [
+                      for (final c in Couriers.all)
+                        DropdownMenuItem(value: c, child: Text(c.nameKo)),
+                    ],
+                    onChanged: (c) => setState(() => _courier = c!),
                   ),
-                  items: [
-                    for (final c in Couriers.all)
-                      DropdownMenuItem(value: c, child: Text(c.nameKo)),
-                  ],
-                  onChanged: (c) => setState(() => _courier = c!),
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _trackingController,
-                  decoration: const InputDecoration(
-                    labelText: StringsKo.trackingNumberLabel,
-                    border: OutlineInputBorder(),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _trackingController,
+                    decoration: const InputDecoration(
+                      labelText: StringsKo.trackingNumberLabel,
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: (v) => (v == null || v.trim().isEmpty)
+                        ? StringsKo.trackingNumberEmpty
+                        : null,
                   ),
-                  validator: (v) => (v == null || v.trim().isEmpty)
-                      ? StringsKo.trackingNumberEmpty
-                      : null,
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _productController,
-                  decoration: const InputDecoration(
-                    labelText: StringsKo.productNameLabel,
-                    border: OutlineInputBorder(),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _productController,
+                    decoration: const InputDecoration(
+                      labelText: StringsKo.productNameLabel,
+                      border: OutlineInputBorder(),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _mallController,
-                  decoration: const InputDecoration(
-                    labelText: StringsKo.mallNameLabel,
-                    border: OutlineInputBorder(),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _mallController,
+                    decoration: const InputDecoration(
+                      labelText: StringsKo.mallNameLabel,
+                      border: OutlineInputBorder(),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<ParcelStatus>(
-                  initialValue: _status,
-                  decoration: const InputDecoration(
-                    labelText: StringsKo.statusLabel,
-                    border: OutlineInputBorder(),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<ParcelStatus>(
+                    initialValue: _status,
+                    decoration: const InputDecoration(
+                      labelText: StringsKo.statusLabel,
+                      border: OutlineInputBorder(),
+                    ),
+                    items: [
+                      for (final s in ParcelStatus.values)
+                        DropdownMenuItem(value: s, child: Text(s.labelKo)),
+                    ],
+                    onChanged: (s) => setState(() => _status = s!),
                   ),
-                  items: [
-                    for (final s in ParcelStatus.values)
-                      DropdownMenuItem(value: s, child: Text(s.labelKo)),
-                  ],
-                  onChanged: (s) => setState(() => _status = s!),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        _expectedArrival == null
-                            ? StringsKo.expectedArrivalLabel
-                            : DateFormat(
-                                'yyyy년 M월 d일 (E)',
-                                'ko',
-                              ).format(_expectedArrival!),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          _expectedArrival == null
+                              ? StringsKo.expectedArrivalLabel
+                              : DateFormat(
+                                  'yyyy년 M월 d일 (E)',
+                                  'ko',
+                                ).format(_expectedArrival!),
+                        ),
                       ),
-                    ),
-                    TextButton(
-                      onPressed: _pickDate,
-                      child: const Text(StringsKo.pickDate),
-                    ),
-                    if (_expectedArrival != null)
                       TextButton(
-                        onPressed: () =>
-                            setState(() => _expectedArrival = null),
-                        child: const Text(StringsKo.clearDate),
+                        onPressed: _pickDate,
+                        child: const Text(StringsKo.pickDate),
                       ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                FilledButton(
-                  onPressed: _submit,
-                  child: const Text(StringsKo.insertButton),
-                ),
-              ],
+                      if (_expectedArrival != null)
+                        TextButton(
+                          onPressed: () =>
+                              setState(() => _expectedArrival = null),
+                          child: const Text(StringsKo.clearDate),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  FilledButton(
+                    onPressed: _submit,
+                    child: const Text(StringsKo.insertButton),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
