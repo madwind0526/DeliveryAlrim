@@ -114,7 +114,7 @@ class Parcel {
       mallName: mallName ?? other.mallName,
       sourceChannels: {...sourceChannels, ...other.sourceChannels},
       expectedArrivalDate: other.expectedArrivalDate ?? expectedArrivalDate,
-      deliveredAt: other.deliveredAt ?? deliveredAt,
+      deliveredAt: deliveredAt ?? other.deliveredAt,
     );
   }
 }

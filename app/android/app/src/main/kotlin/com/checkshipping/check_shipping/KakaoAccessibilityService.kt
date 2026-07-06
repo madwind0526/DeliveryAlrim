@@ -12,7 +12,11 @@ class KakaoAccessibilityService : AccessibilityService() {
         if (event?.packageName != KAKAO_PACKAGE) return
         val root = rootInActiveWindow ?: return
         val messages = mutableListOf<String>()
-        collectAlimtalkMessages(root, messages)
+        try {
+            collectAlimtalkMessages(root, messages)
+        } finally {
+            root.recycle()
+        }
         for (message in messages) {
             if (seenTexts.add(message)) {
                 handleMessage(message)
@@ -46,53 +50,17 @@ class KakaoAccessibilityService : AccessibilityService() {
         val invoice = INVOICE_RE.find(message)?.groupValues?.getOrNull(1)
         if (invoice.isNullOrBlank()) return
 
-        val courier = when {
-            message.contains("CJ대한통운") || message.contains("대한통운") -> "cj"
-            message.contains("롯데택배") -> "lotte"
-            message.contains("한진") -> "hanjin"
-            message.contains("우체국") -> "epost"
-            message.contains("로젠") -> "logen"
-            else -> "unknown"
-        }
-        val status = when {
-            message.contains("배송완료") || message.contains("배달완료") -> "delivered"
-            message.contains("배송출발") || message.contains("배송 예정") -> "out_for_delivery"
-            message.contains("배송중") -> "in_transit"
-            message.contains("집화") || message.contains("상품인수") -> "picked_up"
-            else -> "registered"
-        }
-        val sender = SENDER_RE.find(message)?.groupValues?.getOrNull(1)?.trim()
-
         val capturedAtMillis = System.currentTimeMillis()
 
         getSharedPreferences(PREFS, MODE_PRIVATE)
             .edit()
-            .putString("last_courier", courier)
-            .putString("last_invoice", invoice)
-            .putString("last_status", status)
-            .putString("last_sender", sender)
+            .putString("last_channel", "kakao")
+            .putString("last_package", KAKAO_PACKAGE)
+            .putString("last_body", message)
             .putLong("last_captured_at", capturedAtMillis)
             .apply()
 
-        try {
-            LocalParcelSqliteStore(this).upsert(
-                KakaoParcelCapture(
-                    courierCode = courier,
-                    trackingNumber = invoice,
-                    status = status,
-                    sender = sender,
-                    capturedAtMillis = capturedAtMillis,
-                ),
-            )
-            Log.i(TAG, "persisted capture to local sqlite invoice=$invoice")
-        } catch (error: RuntimeException) {
-            Log.w(TAG, "failed to persist capture", error)
-        }
-
-        Log.i(
-            TAG,
-            "captured courier=$courier invoice=$invoice status=$status sender=${sender ?: ""}",
-        )
+        Log.i(TAG, "captured raw kakao message invoice=$invoice")
     }
 
     companion object {
@@ -103,6 +71,5 @@ class KakaoAccessibilityService : AccessibilityService() {
         private const val MAX_SEEN = 100
 
         private val INVOICE_RE = Regex("""운송장번호\s*[:：]\s*([0-9\-]{9,20})""")
-        private val SENDER_RE = Regex("""보내는(?:분|곳)\s*[:：]\s*([^\n]+)""")
     }
 }

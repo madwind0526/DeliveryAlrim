@@ -35,12 +35,21 @@ class _UserSourcesScreenState extends ConsumerState<UserSourcesScreen> {
   Future<void> _loadCredentialStates() async {
     final store = ref.read(credentialStoreProvider);
     final labelStore = ref.read(sourceLabelStoreProvider);
+    final monitorStore = ref.read(monitorSourceStoreProvider);
     final entries = await Future.wait([
       store.has(CredentialSource.gmail),
       store.has(CredentialSource.otherEmail),
       store.has(CredentialSource.kakao),
       store.has(CredentialSource.telegram),
       store.has(CredentialSource.whatsapp),
+    ]);
+    final enabled = await Future.wait([
+      monitorStore.isEnabled(MonitorSource.gmail),
+      monitorStore.isEnabled(MonitorSource.otherEmail),
+      monitorStore.isEnabled(MonitorSource.sms),
+      monitorStore.isEnabled(MonitorSource.kakao, defaultValue: true),
+      monitorStore.isEnabled(MonitorSource.telegram),
+      monitorStore.isEnabled(MonitorSource.whatsapp),
     ]);
     final otherEmailLabel = await labelStore.read(CredentialSource.otherEmail);
     if (!mounted) return;
@@ -52,9 +61,16 @@ class _UserSourcesScreenState extends ConsumerState<UserSourcesScreen> {
         if (entries[3]) CredentialSource.telegram,
         if (entries[4]) CredentialSource.whatsapp,
       };
-      _otherEmailVisible = entries[1];
-      _telegramVisible = entries[3];
-      _whatsappVisible = entries[4];
+      _emailEnabled = enabled[0];
+      _otherEmailEnabled = enabled[1];
+      _smsEnabled = enabled[2];
+      _kakaoEnabled = enabled[3];
+      _telegramEnabled = enabled[4];
+      _whatsappEnabled = enabled[5];
+      _otherEmailVisible = entries[1] || enabled[1];
+      _smsVisible = enabled[2];
+      _telegramVisible = entries[3] || enabled[4];
+      _whatsappVisible = entries[4] || enabled[5];
       _otherEmailLabel = _cleanLabel(otherEmailLabel, '기타 이메일');
     });
   }
@@ -95,6 +111,15 @@ class _UserSourcesScreenState extends ConsumerState<UserSourcesScreen> {
     );
   }
 
+  Future<void> _setMonitorEnabled(
+    MonitorSource source,
+    bool value,
+    VoidCallback update,
+  ) async {
+    setState(update);
+    await ref.read(monitorSourceStoreProvider).setEnabled(source, value);
+  }
+
   String _cleanLabel(String? value, String fallback) {
     final label = value?.trim();
     return label == null || label.isEmpty ? fallback : label;
@@ -109,6 +134,10 @@ class _UserSourcesScreenState extends ConsumerState<UserSourcesScreen> {
     if (!mounted) return;
 
     setState(result.option.enable);
+    await ref
+        .read(monitorSourceStoreProvider)
+        .setEnabled(result.option.monitorSource, true);
+    if (!mounted) return;
     final displayLabel = result.displayLabel;
     final labelSource = result.option.labelSource;
     if (displayLabel != null && labelSource != null) {
@@ -149,12 +178,14 @@ class _UserSourcesScreenState extends ConsumerState<UserSourcesScreen> {
               _SourceOption(
                 label: 'Gmail',
                 icon: Icons.mail_outline,
+                monitorSource: MonitorSource.gmail,
                 credentialSource: CredentialSource.gmail,
                 enable: () => _emailEnabled = true,
               ),
               _SourceOption(
                 label: '기타 이메일',
                 icon: Icons.alternate_email,
+                monitorSource: MonitorSource.otherEmail,
                 credentialSource: CredentialSource.otherEmail,
                 labelSource: CredentialSource.otherEmail,
                 editableLabel: true,
@@ -168,7 +199,11 @@ class _UserSourcesScreenState extends ConsumerState<UserSourcesScreen> {
           _SwitchRow(
             label: 'Gmail',
             value: _emailEnabled,
-            onChanged: (value) => setState(() => _emailEnabled = value),
+            onChanged: (value) => _setMonitorEnabled(
+              MonitorSource.gmail,
+              value,
+              () => _emailEnabled = value,
+            ),
             credentialStored: _storedCredentials.contains(
               CredentialSource.gmail,
             ),
@@ -179,7 +214,11 @@ class _UserSourcesScreenState extends ConsumerState<UserSourcesScreen> {
             _SwitchRow(
               label: _otherEmailLabel,
               value: _otherEmailEnabled,
-              onChanged: (value) => setState(() => _otherEmailEnabled = value),
+              onChanged: (value) => _setMonitorEnabled(
+                MonitorSource.otherEmail,
+                value,
+                () => _otherEmailEnabled = value,
+              ),
               credentialStored: _storedCredentials.contains(
                 CredentialSource.otherEmail,
               ),
@@ -197,6 +236,7 @@ class _UserSourcesScreenState extends ConsumerState<UserSourcesScreen> {
               _SourceOption(
                 label: 'SMS',
                 icon: Icons.sms_outlined,
+                monitorSource: MonitorSource.sms,
                 enable: () {
                   _smsVisible = true;
                   _smsEnabled = true;
@@ -208,7 +248,11 @@ class _UserSourcesScreenState extends ConsumerState<UserSourcesScreen> {
             _SwitchRow(
               label: 'SMS',
               value: _smsEnabled,
-              onChanged: (value) => setState(() => _smsEnabled = value),
+              onChanged: (value) => _setMonitorEnabled(
+                MonitorSource.sms,
+                value,
+                () => _smsEnabled = value,
+              ),
             ),
           _SectionHeader(
             title: StringsKo.userSnsSection,
@@ -218,12 +262,14 @@ class _UserSourcesScreenState extends ConsumerState<UserSourcesScreen> {
               _SourceOption(
                 label: '카카오톡',
                 icon: Icons.chat_bubble_outline,
+                monitorSource: MonitorSource.kakao,
                 credentialSource: CredentialSource.kakao,
                 enable: () => _kakaoEnabled = true,
               ),
               _SourceOption(
                 label: '텔레그램',
                 icon: Icons.send_outlined,
+                monitorSource: MonitorSource.telegram,
                 credentialSource: CredentialSource.telegram,
                 enable: () {
                   _telegramVisible = true;
@@ -233,6 +279,7 @@ class _UserSourcesScreenState extends ConsumerState<UserSourcesScreen> {
               _SourceOption(
                 label: 'WhatsApp',
                 icon: Icons.forum_outlined,
+                monitorSource: MonitorSource.whatsapp,
                 credentialSource: CredentialSource.whatsapp,
                 enable: () {
                   _whatsappVisible = true;
@@ -244,7 +291,11 @@ class _UserSourcesScreenState extends ConsumerState<UserSourcesScreen> {
           _SwitchRow(
             label: '카카오톡',
             value: _kakaoEnabled,
-            onChanged: (value) => setState(() => _kakaoEnabled = value),
+            onChanged: (value) => _setMonitorEnabled(
+              MonitorSource.kakao,
+              value,
+              () => _kakaoEnabled = value,
+            ),
             credentialStored: _storedCredentials.contains(
               CredentialSource.kakao,
             ),
@@ -255,7 +306,11 @@ class _UserSourcesScreenState extends ConsumerState<UserSourcesScreen> {
             _SwitchRow(
               label: '텔레그램',
               value: _telegramEnabled,
-              onChanged: (value) => setState(() => _telegramEnabled = value),
+              onChanged: (value) => _setMonitorEnabled(
+                MonitorSource.telegram,
+                value,
+                () => _telegramEnabled = value,
+              ),
               credentialStored: _storedCredentials.contains(
                 CredentialSource.telegram,
               ),
@@ -266,7 +321,11 @@ class _UserSourcesScreenState extends ConsumerState<UserSourcesScreen> {
             _SwitchRow(
               label: 'WhatsApp',
               value: _whatsappEnabled,
-              onChanged: (value) => setState(() => _whatsappEnabled = value),
+              onChanged: (value) => _setMonitorEnabled(
+                MonitorSource.whatsapp,
+                value,
+                () => _whatsappEnabled = value,
+              ),
               credentialStored: _storedCredentials.contains(
                 CredentialSource.whatsapp,
               ),
@@ -282,6 +341,7 @@ class _UserSourcesScreenState extends ConsumerState<UserSourcesScreen> {
 class _SourceOption {
   final String label;
   final IconData icon;
+  final MonitorSource monitorSource;
   final CredentialSource? credentialSource;
   final CredentialSource? labelSource;
   final bool editableLabel;
@@ -290,6 +350,7 @@ class _SourceOption {
   const _SourceOption({
     required this.label,
     required this.icon,
+    required this.monitorSource,
     required this.enable,
     this.credentialSource,
     this.labelSource,

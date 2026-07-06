@@ -114,4 +114,28 @@ void main() {
     expect(active.single.trackingNumber, '111111111111');
     expect(done.single.trackingNumber, '222222222222');
   });
+
+  test(
+    'deliveredAt is preserved when delivered parcel is recaptured',
+    () async {
+      final firstDeliveredAt = DateTime(2026, 7, 4, 10);
+      final secondDeliveredAt = DateTime(2026, 7, 4, 12);
+
+      await repo.upsert(
+        _parcel(
+          status: ParcelStatus.delivered,
+          registeredAt: firstDeliveredAt,
+        ).copyWith(deliveredAt: firstDeliveredAt),
+      );
+      await repo.upsert(
+        _parcel(
+          status: ParcelStatus.delivered,
+          registeredAt: secondDeliveredAt,
+        ).copyWith(deliveredAt: secondDeliveredAt),
+      );
+
+      final done = await repo.watchDone().first;
+      expect(done.single.deliveredAt, firstDeliveredAt);
+    },
+  );
 }

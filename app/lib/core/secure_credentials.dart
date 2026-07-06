@@ -13,6 +13,10 @@ final sourceLabelStoreProvider = Provider<SourceLabelStore>(
   (ref) => SecureSourceLabelStore(ref.watch(secureStorageProvider)),
 );
 
+final monitorSourceStoreProvider = Provider<MonitorSourceStore>(
+  (ref) => SecureMonitorSourceStore(ref.watch(secureStorageProvider)),
+);
+
 enum CredentialSource {
   gmail('gmail'),
   otherEmail('other_email'),
@@ -22,6 +26,18 @@ enum CredentialSource {
 
   final String code;
   const CredentialSource(this.code);
+}
+
+enum MonitorSource {
+  gmail('gmail'),
+  otherEmail('other_email'),
+  sms('sms'),
+  kakao('kakao'),
+  telegram('telegram'),
+  whatsapp('whatsapp');
+
+  final String code;
+  const MonitorSource(this.code);
 }
 
 class SourceCredential {
@@ -42,6 +58,11 @@ abstract interface class SourceLabelStore {
   Future<String?> read(CredentialSource source);
   Future<void> write(CredentialSource source, String label);
   Future<void> delete(CredentialSource source);
+}
+
+abstract interface class MonitorSourceStore {
+  Future<bool> isEnabled(MonitorSource source, {bool defaultValue = false});
+  Future<void> setEnabled(MonitorSource source, bool enabled);
 }
 
 class SecureCredentialStore implements CredentialStore {
@@ -142,4 +163,35 @@ class SecureSourceLabelStore implements SourceLabelStore {
   }
 
   String _key(CredentialSource source) => 'source_label.${source.code}';
+}
+
+class SecureMonitorSourceStore implements MonitorSourceStore {
+  final FlutterSecureStorage _storage;
+
+  const SecureMonitorSourceStore(this._storage);
+
+  @override
+  Future<bool> isEnabled(
+    MonitorSource source, {
+    bool defaultValue = false,
+  }) async {
+    try {
+      final value = await _storage.read(key: _key(source));
+      if (value == null) return defaultValue;
+      return value == 'true';
+    } catch (_) {
+      return defaultValue;
+    }
+  }
+
+  @override
+  Future<void> setEnabled(MonitorSource source, bool enabled) async {
+    try {
+      await _storage.write(key: _key(source), value: enabled.toString());
+    } catch (_) {
+      return;
+    }
+  }
+
+  String _key(MonitorSource source) => 'monitor_source.${source.code}.enabled';
 }

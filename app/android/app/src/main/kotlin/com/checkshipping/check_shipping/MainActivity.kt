@@ -40,15 +40,15 @@ class MainActivity : FlutterActivity() {
 
     private fun readLatestCapture(): Map<String, Any?>? {
         val prefs = getSharedPreferences(PREFS, MODE_PRIVATE)
-        val invoice = prefs.getString("last_invoice", null)
+        val body = prefs.getString("last_body", null)
             ?.trim()
             ?.takeIf { it.isNotEmpty() }
             ?: return null
         return mapOf(
-            "courierCode" to (prefs.getString("last_courier", null) ?: "unknown"),
-            "trackingNumber" to invoice,
-            "status" to (prefs.getString("last_status", null) ?: "registered"),
-            "sender" to prefs.getString("last_sender", null),
+            "channel" to (prefs.getString("last_channel", null) ?: "kakao"),
+            "packageName" to prefs.getString("last_package", null),
+            "title" to prefs.getString("last_title", null),
+            "body" to body,
             "capturedAtMillis" to prefs.getLong("last_captured_at", 0L),
         )
     }

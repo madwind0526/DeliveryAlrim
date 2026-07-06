@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/providers.dart';
-import '../parcels/models/parcel.dart';
+import 'rules_provider.dart';
 import 'kakao_capture_bridge.dart';
 
 final kakaoCaptureBridgeProvider = Provider<KakaoCaptureBridge>(
@@ -22,29 +22,18 @@ class KakaoCaptureSync {
     final snapshot = await bridge.getLatestCapture();
     if (snapshot == null || !snapshot.isUsable) return false;
 
-    final capturedAt = snapshot.capturedAt;
-    final status = ParcelStatus.fromCode(snapshot.status);
-    final parcel = Parcel(
-      id: '',
-      courierCode: snapshot.courierCode,
-      trackingNumber: snapshot.trackingNumber,
-      status: status,
-      mallName: snapshot.sender,
-      sourceChannels: const {SourceChannel.kakao},
-      expectedArrivalDate: _expectedDate(status, capturedAt),
-      deliveredAt: status == ParcelStatus.delivered ? capturedAt : null,
-      registeredAt: capturedAt,
-    );
+    final capture = snapshot.toCapture();
+    final engine = await _ref.read(ruleEngineProvider.future);
+    final result = engine.parse(capture);
+    if (!result.matched) {
+      await bridge.clearLatestCapture();
+      return false;
+    }
 
     await _ref
         .read(parcelRepositoryProvider)
-        .upsert(parcel, eventNote: '카카오톡 알림톡');
+        .upsert(result.parcel!.toParcel(capture), eventNote: '카카오톡 알림톡');
     await bridge.clearLatestCapture();
     return true;
-  }
-
-  DateTime? _expectedDate(ParcelStatus status, DateTime capturedAt) {
-    if (status != ParcelStatus.outForDelivery) return null;
-    return DateTime(capturedAt.year, capturedAt.month, capturedAt.day);
   }
 }

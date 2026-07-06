@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/router.dart';
+import 'core/secure_credentials.dart';
 import 'core/responsive_text_policy.dart';
 import 'core/strings_ko.dart';
 import 'core/theme.dart';
@@ -43,6 +44,10 @@ class _CheckShippingAppState extends ConsumerState<CheckShippingApp>
     if (_syncing) return;
     _syncing = true;
     try {
+      final kakaoEnabled = await ref
+          .read(monitorSourceStoreProvider)
+          .isEnabled(MonitorSource.kakao, defaultValue: true);
+      if (!kakaoEnabled) return;
       await ref.read(kakaoCaptureSyncProvider).syncLatest();
     } finally {
       _syncing = false;

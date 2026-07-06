@@ -5,7 +5,7 @@
 - **Wave:** 6
 - **Status:** In Progress
 - **Cache Status:** CLEAN
-- **Last Checkpoint:** 2026-07-06 code-review.md 지적사항 중 즉시 수정 가능한 항목 반영 및 debug/release 빌드 검증
+- **Last Checkpoint:** 2026-07-06 code-review.md 지적사항 추가 반영, 카카오 캡처 단일 저장 경로 정리, debug/release 빌드와 실기기 업데이트 검증
 
 ## Wave History
 
@@ -29,5 +29,6 @@
 - Settings > 테스트에는 Gmail/SMS 샘플과 카카오톡 동기화, 알림 주입 테스트만 둔다.
 - 배송 수동 등록은 자동 수집 보완용 정식 기능이며 홈 배송 목록 `+` FAB에서 연다.
 - Android 업데이트는 `adb install -r`로 진행해 secure storage의 기존 로그인 정보를 보존한다.
-- `code-review.md` 기준 즉시 수정된 항목: secure storage 실패 방어, 수동 등록 운송장 패턴 검증, 카카오 최신 캡처 clear, 릴리즈 빌드 테스트 주입 UI 숨김.
-- 남은 구조 이슈: 네이티브/Drift 동일 SQLite 동시 쓰기, NotificationListener 실제 파서 구현, User 소스 on/off와 실제 동기화 연결, 접근성 노드 recycle 정리.
+- `code-review.md` 기준 수정된 항목: secure storage 실패 방어, 수동 등록 운송장 패턴 검증, 카카오 최신 캡처 clear, 릴리즈 빌드 테스트 주입 UI 숨김, 네이티브/Drift 동일 SQLite 동시 쓰기 제거, deliveredAt 보존, 접근성 root recycle, 하단 네비게이션 접근성 label 복구.
+- User 소스 on/off 상태는 secure storage에 저장하며, 카카오톡 자동 동기화는 카카오톡 on/off 상태를 따른다.
+- 남은 구조 이슈: NotificationListener 실제 파서 구현, Gmail/IMAP 실제 연결, Android SMS 권한/수신 연결, 카카오톡 계정 적용 범위 정리, 배터리 최적화 대응.
