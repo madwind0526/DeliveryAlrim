@@ -29,7 +29,7 @@ class ParcelStatusBadge extends StatelessWidget {
                 softWrap: false,
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: Colors.white,
+                  color: _textColor(context),
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -52,5 +52,13 @@ class ParcelStatusBadge extends StatelessWidget {
     return status.isTerminal
         ? colors.outline.withValues(alpha: 0.55)
         : colors.outline.withValues(alpha: 0.35);
+  }
+
+  Color _textColor(BuildContext context) {
+    return switch (status) {
+      ParcelStatus.outForDelivery => const Color(0xFFFFE08A),
+      ParcelStatus.inTransit => const Color(0xFFFFA3A3),
+      _ => Colors.white,
+    };
   }
 }
