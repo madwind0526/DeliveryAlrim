@@ -192,16 +192,46 @@ class _ParcelCard extends StatelessWidget {
             ],
           ],
         ),
-        trailing: Chip(
-          label: Text(
-            parcel.status.labelKo,
-            style: const TextStyle(fontSize: 12, color: Colors.white),
-          ),
-          backgroundColor: parcel.status.color,
-          visualDensity: VisualDensity.compact,
-          side: BorderSide.none,
-        ),
+        trailing: _StatusBadge(status: parcel.status),
         isThreeLine: arrival != null,
+      ),
+    );
+  }
+}
+
+class _StatusBadge extends StatelessWidget {
+  final ParcelStatus status;
+
+  const _StatusBadge({required this.status});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 88,
+      height: 40,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: status.color,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                status.labelKo,
+                maxLines: 1,
+                softWrap: false,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
