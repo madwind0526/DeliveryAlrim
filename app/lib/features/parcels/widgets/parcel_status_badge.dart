@@ -55,10 +55,15 @@ class ParcelStatusBadge extends StatelessWidget {
   }
 
   Color _textColor(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return switch (status) {
-      ParcelStatus.outForDelivery => const Color(0xFFFFE08A),
-      ParcelStatus.inTransit => const Color(0xFFFFA3A3),
-      _ => Colors.white,
+      ParcelStatus.outForDelivery =>
+        isDark ? const Color(0xFFFFE08A) : const Color(0xFF7A5200),
+      ParcelStatus.inTransit =>
+        isDark ? const Color(0xFFFFA3A3) : const Color(0xFF9A3030),
+      ParcelStatus.delivered =>
+        isDark ? const Color(0xFF8FF0A4) : const Color(0xFF1F713A),
+      _ => isDark ? Colors.white : const Color(0xFF252525),
     };
   }
 }
