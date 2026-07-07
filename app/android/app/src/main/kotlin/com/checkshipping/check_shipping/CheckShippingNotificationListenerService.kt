@@ -8,7 +8,15 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 class CheckShippingNotificationListenerService : NotificationListenerService() {
+    override fun onListenerConnected() {
+        activeNotifications.orEmpty().forEach { processNotification(it) }
+    }
+
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
+        processNotification(sbn)
+    }
+
+    private fun processNotification(sbn: StatusBarNotification?) {
         val notification = sbn?.notification ?: return
         val packageName = sbn.packageName ?: return
         val channel = classifyPackage(packageName) ?: return
