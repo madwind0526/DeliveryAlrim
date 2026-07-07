@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:table_calendar/table_calendar.dart';
 
+import '../../core/app_background_button.dart';
 import '../../core/constants/couriers.dart';
 import '../../core/providers.dart';
 import '../../core/strings_ko.dart';
@@ -58,7 +59,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     final byDayAsync = ref.watch(parcelsByDayProvider);
 
     return Scaffold(
-      appBar: AppBar(title: Text(widget.title)),
+      appBar: AppBar(
+        title: Text(widget.title),
+        actions: const [AppBackgroundButton()],
+      ),
       body: byDayAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('$e')),

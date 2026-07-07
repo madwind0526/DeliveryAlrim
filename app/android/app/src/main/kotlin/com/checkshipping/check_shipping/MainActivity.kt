@@ -2,7 +2,10 @@ package com.checkshipping.check_shipping
 
 import android.content.ComponentName
 import android.content.Intent
+import android.os.Build
+import android.os.Bundle
 import android.provider.Settings
+import android.window.OnBackInvokedDispatcher
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -10,6 +13,19 @@ import java.io.ByteArrayOutputStream
 import org.json.JSONArray
 
 class MainActivity : FlutterActivity() {
+    private var appControlChannel: MethodChannel? = null
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            onBackInvokedDispatcher.registerOnBackInvokedCallback(
+                OnBackInvokedDispatcher.PRIORITY_OVERLAY,
+            ) {
+                requestGoHome()
+            }
+        }
+    }
+
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL)
@@ -45,6 +61,28 @@ class MainActivity : FlutterActivity() {
                     else -> result.notImplemented()
                 }
             }
+        appControlChannel = MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            APP_CONTROL_CHANNEL,
+        )
+        appControlChannel?.setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "moveTaskToBack" -> {
+                        moveTaskToBack(true)
+                        result.success(null)
+                    }
+                    else -> result.notImplemented()
+                }
+            }
+    }
+
+    @Deprecated("Deprecated in Android framework, still used by FlutterActivity back dispatch.")
+    override fun onBackPressed() {
+        requestGoHome()
+    }
+
+    private fun requestGoHome() {
+        appControlChannel?.invokeMethod("goHome", null)
     }
 
     private fun readLatestCapture(): Map<String, Any?>? {
@@ -226,6 +264,7 @@ class MainActivity : FlutterActivity() {
     companion object {
         private const val CHANNEL = "check_shipping/kakao_capture"
         private const val SETTINGS_CHANNEL = "check_shipping/system_settings"
+        private const val APP_CONTROL_CHANNEL = "check_shipping/app_control"
         private const val PREFS = "kakao_accessibility"
         private const val KEY_PENDING_CAPTURES = "pending_captures"
         private val FLIP_FONT_PACKAGES = listOf(

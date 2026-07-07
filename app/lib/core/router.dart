@@ -113,41 +113,54 @@ class _ShellScaffold extends StatelessWidget {
     ];
     final wide = MediaQuery.sizeOf(context).width >= 720;
 
-    return Scaffold(
-      body: Column(
-        children: [
-          const _AppHeader(),
-          Expanded(
-            child: wide
-                ? Row(
-                    children: [
-                      _SideMenu(shell: shell, destinations: destinations),
-                      const VerticalDivider(width: 1),
-                      Expanded(child: shell),
-                    ],
-                  )
-                : shell,
-          ),
-        ],
-      ),
-      bottomNavigationBar: wide
-          ? null
-          : NavigationBar(
-              labelBehavior: NavigationDestinationLabelBehavior.alwaysHide,
-              selectedIndex: shell.currentIndex,
-              onDestinationSelected: (index) => shell.goBranch(
-                index,
-                initialLocation: index == shell.currentIndex,
+    return BackButtonListener(
+      onBackButtonPressed: () async {
+        shell.goBranch(0, initialLocation: true);
+        return true;
+      },
+      child: PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, result) {
+          if (didPop) return;
+          shell.goBranch(0, initialLocation: true);
+        },
+        child: Scaffold(
+          body: Column(
+            children: [
+              const _AppHeader(),
+              Expanded(
+                child: wide
+                    ? Row(
+                        children: [
+                          _SideMenu(shell: shell, destinations: destinations),
+                          const VerticalDivider(width: 1),
+                          Expanded(child: shell),
+                        ],
+                      )
+                    : shell,
               ),
-              destinations: [
-                for (final d in destinations)
-                  NavigationDestination(
-                    icon: Icon(d.icon),
-                    selectedIcon: Icon(d.selectedIcon),
-                    label: d.label,
+            ],
+          ),
+          bottomNavigationBar: wide
+              ? null
+              : NavigationBar(
+                  labelBehavior: NavigationDestinationLabelBehavior.alwaysHide,
+                  selectedIndex: shell.currentIndex,
+                  onDestinationSelected: (index) => shell.goBranch(
+                    index,
+                    initialLocation: index == shell.currentIndex,
                   ),
-              ],
-            ),
+                  destinations: [
+                    for (final d in destinations)
+                      NavigationDestination(
+                        icon: Icon(d.icon),
+                        selectedIcon: Icon(d.selectedIcon),
+                        label: d.label,
+                      ),
+                  ],
+                ),
+        ),
+      ),
     );
   }
 }

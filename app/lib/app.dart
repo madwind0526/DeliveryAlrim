@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/router.dart';
+import 'core/app_background_bridge.dart';
 import 'core/responsive_text_policy.dart';
 import 'core/strings_ko.dart';
 import 'core/theme.dart';
@@ -23,6 +24,9 @@ class _CheckShippingAppState extends ConsumerState<CheckShippingApp>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    AppBackgroundBridge.setGoHomeHandler(() async {
+      ref.read(routerProvider).go('/');
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) => _syncLatestCapture());
   }
 

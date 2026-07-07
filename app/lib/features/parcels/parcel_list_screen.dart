@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/app_background_button.dart';
 import '../../core/constants/couriers.dart';
 import '../../core/providers.dart';
 import '../../core/strings_ko.dart';
@@ -67,6 +68,7 @@ class _ParcelListScreenState extends ConsumerState<ParcelListScreen> {
               icon: const Icon(Icons.storefront_outlined),
               onPressed: () => _showCompanyPicker(context),
             ),
+            const AppBackgroundButton(),
           ],
           bottom: const TabBar(
             tabs: [

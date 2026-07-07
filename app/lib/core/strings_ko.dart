@@ -70,6 +70,7 @@ abstract final class StringsKo {
   static const settingAccessibilitySystemHint =
       'Android 설정 > 접근성 > 설치된 앱에서 배송알리미 카카오톡 수집을 켜야 합니다.';
   static const settingOpenSettingsFailed = '시스템 설정 화면을 열 수 없습니다';
+  static const sendAppToBackground = '홈 화면으로';
   static const userTitle = '사용자';
   static const userEmailSection = '이메일 모니터링';
   static const userSmsSection = '문자 모니터링';

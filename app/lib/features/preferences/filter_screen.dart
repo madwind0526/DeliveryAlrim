@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/app_background_button.dart';
 import '../../core/constants/couriers.dart';
 import '../../core/strings_ko.dart';
 import '../parcels/models/parcel.dart';
@@ -54,7 +55,10 @@ class _FilterScreenState extends State<FilterScreen> {
               '${_range!.end.month}/${_range!.end.day}';
 
     return Scaffold(
-      appBar: AppBar(title: const Text(StringsKo.filterTitle)),
+      appBar: AppBar(
+        title: const Text(StringsKo.filterTitle),
+        actions: const [AppBackgroundButton()],
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [

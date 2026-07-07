@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/app_background_button.dart';
 import '../../core/strings_ko.dart';
 import '../capture/kakao_capture_sync.dart';
 import '../debug/capture_test_runner.dart';
@@ -136,7 +137,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
   Widget build(BuildContext context) {
     final mode = kDebugMode ? _mode : StringsKo.settingModeLocal;
     return Scaffold(
-      appBar: AppBar(title: const Text(StringsKo.settingTitle)),
+      appBar: AppBar(
+        title: const Text(StringsKo.settingTitle),
+        actions: const [AppBackgroundButton()],
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [

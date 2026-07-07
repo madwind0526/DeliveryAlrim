@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/adaptive_text.dart';
+import '../../core/app_background_button.dart';
 import '../../core/secure_credentials.dart';
 import '../../core/strings_ko.dart';
 
@@ -202,7 +203,10 @@ class _UserSourcesScreenState extends ConsumerState<UserSourcesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const AdaptiveText(StringsKo.userTitle)),
+      appBar: AppBar(
+        title: const AdaptiveText(StringsKo.userTitle),
+        actions: const [AppBackgroundButton()],
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
