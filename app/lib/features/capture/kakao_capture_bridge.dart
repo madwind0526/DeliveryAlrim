@@ -39,6 +39,17 @@ class KakaoCaptureBridge {
     }
   }
 
+  Future<int> scanActiveNotifications() async {
+    try {
+      final count = await _channel.invokeMethod<int>('scanActiveNotifications');
+      return count ?? 0;
+    } on MissingPluginException {
+      return 0;
+    } on PlatformException {
+      return 0;
+    }
+  }
+
   Future<void> clearLatestCapture() async {
     try {
       await _channel.invokeMethod<void>('clearLatestCapture');

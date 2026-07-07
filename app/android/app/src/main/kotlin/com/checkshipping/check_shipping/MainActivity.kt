@@ -17,6 +17,9 @@ class MainActivity : FlutterActivity() {
                 when (call.method) {
                     "getLatestCapture" -> result.success(readLatestCapture())
                     "getPendingCaptures" -> result.success(readPendingCaptures())
+                    "scanActiveNotifications" -> result.success(
+                        CheckShippingNotificationListenerService.scanActiveNotificationsFromFlutter(),
+                    )
                     "getSamsungFlipFont" -> result.success(readSamsungFlipFont())
                     "clearLatestCapture" -> {
                         clearCaptures()

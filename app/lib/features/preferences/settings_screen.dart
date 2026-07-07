@@ -25,6 +25,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
   bool _openingSettings = false;
   bool _sendingTest = false;
   bool _syncingKakao = false;
+  bool _rescanningNotifications = false;
   String _mode = StringsKo.settingModeLocal;
 
   @override
@@ -110,6 +111,27 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
     }
   }
 
+  Future<void> _rescanActiveNotifications() async {
+    if (_rescanningNotifications) return;
+    setState(() => _rescanningNotifications = true);
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final synced = await ref
+          .read(kakaoCaptureSyncProvider)
+          .syncLatest(rescanActiveNotifications: true);
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            synced ? StringsKo.userKakaoSyncDone : StringsKo.userKakaoSyncEmpty,
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _rescanningNotifications = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final mode = kDebugMode ? _mode : StringsKo.settingModeLocal;
@@ -155,9 +177,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
             _TestSettingsSection(
               sendingTest: _sendingTest,
               syncingKakao: _syncingKakao,
+              rescanningNotifications: _rescanningNotifications,
               onSendGmailTest: () => _sendTest(CaptureTestSamples.gmail),
               onSendSmsTest: () => _sendTest(CaptureTestSamples.sms),
               onSyncKakao: _syncKakao,
+              onRescanNotifications: _rescanActiveNotifications,
             ),
         ],
       ),
@@ -259,16 +283,20 @@ class _SystemPermissionTile extends StatelessWidget {
 class _TestSettingsSection extends StatelessWidget {
   final bool sendingTest;
   final bool syncingKakao;
+  final bool rescanningNotifications;
   final VoidCallback onSendGmailTest;
   final VoidCallback onSendSmsTest;
   final VoidCallback onSyncKakao;
+  final VoidCallback onRescanNotifications;
 
   const _TestSettingsSection({
     required this.sendingTest,
     required this.syncingKakao,
+    required this.rescanningNotifications,
     required this.onSendGmailTest,
     required this.onSendSmsTest,
     required this.onSyncKakao,
+    required this.onRescanNotifications,
   });
 
   @override
@@ -304,6 +332,16 @@ class _TestSettingsSection extends StatelessWidget {
                     )
                   : const Icon(Icons.sync),
               label: const Text(StringsKo.userKakaoSync),
+            ),
+            FilledButton.tonalIcon(
+              onPressed: rescanningNotifications ? null : onRescanNotifications,
+              icon: rescanningNotifications
+                  ? const SizedBox.square(
+                      dimension: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.notifications_active_outlined),
+              label: const Text(StringsKo.activeNotificationRescan),
             ),
             OutlinedButton.icon(
               onPressed: () => context.push('/debug/replay'),

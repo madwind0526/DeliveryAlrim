@@ -43,7 +43,9 @@ class _CheckShippingAppState extends ConsumerState<CheckShippingApp>
     if (_syncing) return;
     _syncing = true;
     try {
-      await ref.read(kakaoCaptureSyncProvider).syncLatest();
+      await ref
+          .read(kakaoCaptureSyncProvider)
+          .syncLatest(rescanActiveNotifications: true);
     } finally {
       _syncing = false;
     }

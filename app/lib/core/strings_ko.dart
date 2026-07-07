@@ -89,6 +89,7 @@ abstract final class StringsKo {
   static const userCredentialRequired = '계정과 비밀번호/토큰을 입력해 주세요';
   static const userSecureStorageNotice = '로그인 정보는 항상 이 기기에 암호화 저장됩니다';
   static const userKakaoSync = '알림 동기화';
+  static const activeNotificationRescan = '현재 알림 다시 스캔';
   static const userKakaoSyncDone = '알림 배송 정보를 동기화했습니다';
   static const userKakaoSyncEmpty = '새 알림 배송 정보가 없습니다';
   static const addSource = '추가';

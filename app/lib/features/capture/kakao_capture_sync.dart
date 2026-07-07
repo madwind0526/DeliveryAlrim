@@ -19,8 +19,11 @@ class KakaoCaptureSync {
 
   KakaoCaptureSync(this._ref);
 
-  Future<bool> syncLatest() async {
+  Future<bool> syncLatest({bool rescanActiveNotifications = false}) async {
     final bridge = _ref.read(kakaoCaptureBridgeProvider);
+    if (rescanActiveNotifications) {
+      await bridge.scanActiveNotifications();
+    }
     final pending = await bridge.getPendingCaptures();
     final latest = pending.isEmpty ? await bridge.getLatestCapture() : null;
     final snapshots = pending.isNotEmpty ? pending : [?latest];

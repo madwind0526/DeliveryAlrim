@@ -9,21 +9,57 @@ import org.json.JSONObject
 
 class CheckShippingNotificationListenerService : NotificationListenerService() {
     override fun onListenerConnected() {
-        activeNotifications.orEmpty().forEach { processNotification(it) }
+        activeService = this
+        scanActiveNotifications("listener_connected")
+    }
+
+    override fun onListenerDisconnected() {
+        if (activeService === this) activeService = null
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
-        processNotification(sbn)
+        processNotification(sbn, "posted")
     }
 
-    private fun processNotification(sbn: StatusBarNotification?) {
+    override fun onDestroy() {
+        if (activeService === this) activeService = null
+        super.onDestroy()
+    }
+
+    fun scanActiveNotifications(reason: String): Int {
+        val notifications = try {
+            activeNotifications.orEmpty()
+        } catch (error: SecurityException) {
+            Log.w(TAG, "active notification scan denied reason=$reason", error)
+            return 0
+        }
+        notifications.forEach { processNotification(it, reason) }
+        Log.i(TAG, "scanned active notifications count=${notifications.size} reason=$reason")
+        return notifications.size
+    }
+
+    private fun processNotification(sbn: StatusBarNotification?, reason: String) {
         val notification = sbn?.notification ?: return
         val packageName = sbn.packageName ?: return
         val channel = classifyPackage(packageName) ?: return
+        val isGroupSummary = notification.flags and Notification.FLAG_GROUP_SUMMARY != 0
 
         val title = notification.textExtra(Notification.EXTRA_TITLE)
         val body = buildBody(notification)
-        if (body.isBlank() || !looksLikeDelivery("$title\n$body")) return
+        if (body.isBlank()) {
+            Log.d(
+                TAG,
+                "ignored blank notification package=$packageName groupSummary=$isGroupSummary reason=$reason",
+            )
+            return
+        }
+        if (!looksLikeDelivery("$title\n$body")) {
+            Log.d(
+                TAG,
+                "ignored non-delivery notification package=$packageName groupSummary=$isGroupSummary reason=$reason",
+            )
+            return
+        }
 
         enqueueCapture(
             channel = channel,
@@ -32,6 +68,8 @@ class CheckShippingNotificationListenerService : NotificationListenerService() {
             sender = title,
             body = body,
             capturedAtMillis = sbn.postTime.takeIf { it > 0 } ?: System.currentTimeMillis(),
+            groupSummary = isGroupSummary,
+            reason = reason,
         )
     }
 
@@ -57,8 +95,11 @@ class CheckShippingNotificationListenerService : NotificationListenerService() {
 
         add(extras.getCharSequence(Notification.EXTRA_TEXT))
         add(extras.getCharSequence(Notification.EXTRA_BIG_TEXT))
+        add(extras.getCharSequence(Notification.EXTRA_TITLE_BIG))
         add(extras.getCharSequence(Notification.EXTRA_SUB_TEXT))
         add(extras.getCharSequence(Notification.EXTRA_SUMMARY_TEXT))
+        add(extras.getCharSequence(Notification.EXTRA_INFO_TEXT))
+        add(extras.getCharSequence(Notification.EXTRA_CONVERSATION_TITLE))
         val textLines = extras.getCharSequenceArray(Notification.EXTRA_TEXT_LINES)
         textLines?.forEach { add(it) }
         return lines.joinToString("\n")
@@ -77,6 +118,8 @@ class CheckShippingNotificationListenerService : NotificationListenerService() {
         sender: String?,
         body: String,
         capturedAtMillis: Long,
+        groupSummary: Boolean,
+        reason: String,
     ) {
         val prefs = getSharedPreferences(PREFS, MODE_PRIVATE)
         val dedupeKey = "$channel|$packageName|${title.orEmpty()}|$body"
@@ -88,7 +131,13 @@ class CheckShippingNotificationListenerService : NotificationListenerService() {
 
         for (index in 0 until queue.length()) {
             val existing = queue.optJSONObject(index) ?: continue
-            if (existing.optString("dedupeKey") == dedupeKey) return
+            if (existing.optString("dedupeKey") == dedupeKey) {
+                Log.d(
+                    TAG,
+                    "skipped duplicate notification channel=$channel package=$packageName groupSummary=$groupSummary reason=$reason",
+                )
+                return
+            }
         }
 
         val next = JSONArray()
@@ -116,10 +165,19 @@ class CheckShippingNotificationListenerService : NotificationListenerService() {
             .putString("last_body", body)
             .putLong("last_captured_at", capturedAtMillis)
             .apply()
-        Log.i(TAG, "captured notification channel=$channel package=$packageName")
+        Log.i(
+            TAG,
+            "captured notification channel=$channel package=$packageName groupSummary=$groupSummary reason=$reason",
+        )
     }
 
     companion object {
+        @Volatile
+        private var activeService: CheckShippingNotificationListenerService? = null
+
+        fun scanActiveNotificationsFromFlutter(): Int =
+            activeService?.scanActiveNotifications("flutter_request") ?: 0
+
         private const val TAG = "CheckShippingNotify"
         private const val PREFS = "kakao_accessibility"
         private const val KEY_PENDING_CAPTURES = "pending_captures"
