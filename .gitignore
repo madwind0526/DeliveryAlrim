@@ -25,6 +25,10 @@ app/**/*.freezed.dart
 supabase/.temp/
 supabase/.branches/
 
+# Python (tools/)
+__pycache__/
+*.pyc
+
 # Local verification artifacts with private notification/chat content
 android_*.xml
 android_*.png

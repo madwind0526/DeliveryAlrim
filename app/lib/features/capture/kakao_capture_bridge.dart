@@ -18,9 +18,40 @@ class KakaoCaptureBridge {
     }
   }
 
+  Future<List<KakaoCaptureSnapshot>> getPendingCaptures() async {
+    try {
+      final raw = await _channel.invokeListMethod<dynamic>(
+        'getPendingCaptures',
+      );
+      return raw
+              ?.whereType<Map<dynamic, dynamic>>()
+              .map(
+                (item) => KakaoCaptureSnapshot.fromMap(
+                  item.map((key, value) => MapEntry(key.toString(), value)),
+                ),
+              )
+              .toList() ??
+          const [];
+    } on MissingPluginException {
+      return const [];
+    } on PlatformException {
+      return const [];
+    }
+  }
+
   Future<void> clearLatestCapture() async {
     try {
       await _channel.invokeMethod<void>('clearLatestCapture');
+    } on MissingPluginException {
+      return;
+    } on PlatformException {
+      return;
+    }
+  }
+
+  Future<void> clearPendingCaptures() async {
+    try {
+      await _channel.invokeMethod<void>('clearPendingCaptures');
     } on MissingPluginException {
       return;
     } on PlatformException {
@@ -33,6 +64,7 @@ class KakaoCaptureSnapshot {
   final String channel;
   final String? packageName;
   final String? title;
+  final String? sender;
   final String body;
   final int capturedAtMillis;
 
@@ -40,6 +72,7 @@ class KakaoCaptureSnapshot {
     required this.channel,
     required this.packageName,
     required this.title,
+    required this.sender,
     required this.body,
     required this.capturedAtMillis,
   });
@@ -49,6 +82,7 @@ class KakaoCaptureSnapshot {
       channel: _stringValue(raw['channel']) ?? CaptureChannel.kakao.code,
       packageName: _stringValue(raw['packageName']),
       title: _stringValue(raw['title']),
+      sender: _stringValue(raw['sender']),
       body: _stringValue(raw['body']) ?? '',
       capturedAtMillis: _intValue(raw['capturedAtMillis']),
     );
@@ -60,6 +94,7 @@ class KakaoCaptureSnapshot {
     return RawCapture(
       channel: CaptureChannel.fromCode(channel),
       packageName: packageName,
+      sender: sender,
       title: title,
       body: body,
       capturedAt: capturedAt,

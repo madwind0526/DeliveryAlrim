@@ -66,7 +66,7 @@ abstract final class StringsKo {
   static const settingPermissionOn = '시스템 설정에서 허용됨';
   static const settingPermissionOff = '시스템 설정에서 허용 필요';
   static const settingNotificationSystemHint =
-      'Android 설정 > 알림 접근에서 배송알리미를 허용합니다. 알림 자동 분류는 구현 중입니다.';
+      'Android 설정 > 알림 접근에서 배송알리미를 허용합니다. Gmail, 네이버 메일, SMS 알림을 배송 후보로 수집합니다.';
   static const settingAccessibilitySystemHint =
       'Android 설정 > 접근성 > 설치된 앱에서 배송알리미 카카오톡 수집을 켜야 합니다.';
   static const settingOpenSettingsFailed = '시스템 설정 화면을 열 수 없습니다';
@@ -88,9 +88,9 @@ abstract final class StringsKo {
   static const userCredentialDeletedSnack = '로그인 정보를 삭제했습니다';
   static const userCredentialRequired = '계정과 비밀번호/토큰을 입력해 주세요';
   static const userSecureStorageNotice = '로그인 정보는 항상 이 기기에 암호화 저장됩니다';
-  static const userKakaoSync = '카카오톡 동기화';
-  static const userKakaoSyncDone = '카카오톡 배송 정보를 동기화했습니다';
-  static const userKakaoSyncEmpty = '새 카카오톡 배송 정보가 없습니다';
+  static const userKakaoSync = '알림 동기화';
+  static const userKakaoSyncDone = '알림 배송 정보를 동기화했습니다';
+  static const userKakaoSyncEmpty = '새 알림 배송 정보가 없습니다';
   static const addSource = '추가';
   static const addSourceTitle = '소스 추가';
   static const sourceDisplayName = '표시 이름';

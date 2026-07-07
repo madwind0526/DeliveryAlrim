@@ -7,6 +7,7 @@ import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import java.io.ByteArrayOutputStream
+import org.json.JSONArray
 
 class MainActivity : FlutterActivity() {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -15,9 +16,14 @@ class MainActivity : FlutterActivity() {
             .setMethodCallHandler { call, result ->
                 when (call.method) {
                     "getLatestCapture" -> result.success(readLatestCapture())
+                    "getPendingCaptures" -> result.success(readPendingCaptures())
                     "getSamsungFlipFont" -> result.success(readSamsungFlipFont())
                     "clearLatestCapture" -> {
-                        getSharedPreferences(PREFS, MODE_PRIVATE).edit().clear().apply()
+                        clearCaptures()
+                        result.success(null)
+                    }
+                    "clearPendingCaptures" -> {
+                        clearCaptures()
                         result.success(null)
                     }
                     else -> result.notImplemented()
@@ -48,9 +54,54 @@ class MainActivity : FlutterActivity() {
             "channel" to (prefs.getString("last_channel", null) ?: "kakao"),
             "packageName" to prefs.getString("last_package", null),
             "title" to prefs.getString("last_title", null),
+            "sender" to prefs.getString("last_sender", null),
             "body" to body,
             "capturedAtMillis" to prefs.getLong("last_captured_at", 0L),
         )
+    }
+
+    private fun readPendingCaptures(): List<Map<String, Any?>> {
+        val prefs = getSharedPreferences(PREFS, MODE_PRIVATE)
+        val queue = try {
+            JSONArray(prefs.getString(KEY_PENDING_CAPTURES, "[]"))
+        } catch (_: Exception) {
+            JSONArray()
+        }
+        val captures = mutableListOf<Map<String, Any?>>()
+        for (index in 0 until queue.length()) {
+            val item = queue.optJSONObject(index) ?: continue
+            val body = item.optString("body").trim()
+            if (body.isEmpty()) continue
+            captures.add(
+                mapOf(
+                    "channel" to item.optString("channel", "kakao"),
+                    "packageName" to item.optNullableString("packageName"),
+                    "title" to item.optNullableString("title"),
+                    "sender" to item.optNullableString("sender"),
+                    "body" to body,
+                    "capturedAtMillis" to item.optLong("capturedAtMillis", 0L),
+                ),
+            )
+        }
+        return captures
+    }
+
+    private fun clearCaptures() {
+        getSharedPreferences(PREFS, MODE_PRIVATE)
+            .edit()
+            .remove(KEY_PENDING_CAPTURES)
+            .remove("last_channel")
+            .remove("last_package")
+            .remove("last_title")
+            .remove("last_sender")
+            .remove("last_body")
+            .remove("last_captured_at")
+            .apply()
+    }
+
+    private fun org.json.JSONObject.optNullableString(key: String): String? {
+        if (isNull(key)) return null
+        return optString(key).trim().takeIf { it.isNotEmpty() }
     }
 
     private fun readSamsungFlipFont(): ByteArray? {
@@ -173,6 +224,7 @@ class MainActivity : FlutterActivity() {
         private const val CHANNEL = "check_shipping/kakao_capture"
         private const val SETTINGS_CHANNEL = "check_shipping/system_settings"
         private const val PREFS = "kakao_accessibility"
+        private const val KEY_PENDING_CAPTURES = "pending_captures"
         private val FLIP_FONT_PACKAGES = listOf(
             "com.monotype.android.font.samsungone",
             "com.monotype.android.font.samsungsans",

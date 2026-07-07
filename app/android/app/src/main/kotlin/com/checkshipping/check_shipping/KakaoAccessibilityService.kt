@@ -4,6 +4,8 @@ import android.accessibilityservice.AccessibilityService
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
+import org.json.JSONArray
+import org.json.JSONObject
 
 class KakaoAccessibilityService : AccessibilityService() {
     private val seenTexts = LinkedHashSet<String>()
@@ -59,8 +61,39 @@ class KakaoAccessibilityService : AccessibilityService() {
             .putString("last_body", message)
             .putLong("last_captured_at", capturedAtMillis)
             .apply()
+        enqueueCapture(message, capturedAtMillis)
 
         Log.i(TAG, "captured raw kakao message invoice=$invoice")
+    }
+
+    private fun enqueueCapture(body: String, capturedAtMillis: Long) {
+        val prefs = getSharedPreferences(PREFS, MODE_PRIVATE)
+        val dedupeKey = "kakao|$KAKAO_PACKAGE|$body"
+        val queue = try {
+            JSONArray(prefs.getString(KEY_PENDING_CAPTURES, "[]"))
+        } catch (_: Exception) {
+            JSONArray()
+        }
+        for (index in 0 until queue.length()) {
+            val existing = queue.optJSONObject(index) ?: continue
+            if (existing.optString("dedupeKey") == dedupeKey) return
+        }
+        val next = JSONArray()
+        val start = (queue.length() - MAX_PENDING_CAPTURES + 1).coerceAtLeast(0)
+        for (index in start until queue.length()) {
+            next.put(queue.get(index))
+        }
+        next.put(
+            JSONObject()
+                .put("channel", "kakao")
+                .put("packageName", KAKAO_PACKAGE)
+                .put("title", JSONObject.NULL)
+                .put("sender", JSONObject.NULL)
+                .put("body", body)
+                .put("capturedAtMillis", capturedAtMillis)
+                .put("dedupeKey", dedupeKey),
+        )
+        prefs.edit().putString(KEY_PENDING_CAPTURES, next.toString()).apply()
     }
 
     companion object {
@@ -68,7 +101,9 @@ class KakaoAccessibilityService : AccessibilityService() {
         private const val KAKAO_PACKAGE = "com.kakao.talk"
         private const val ALIMTALK_TITLE_ID = "com.kakao.talk:id/alimtalk_title"
         private const val PREFS = "kakao_accessibility"
+        private const val KEY_PENDING_CAPTURES = "pending_captures"
         private const val MAX_SEEN = 100
+        private const val MAX_PENDING_CAPTURES = 25
 
         private val INVOICE_RE = Regex("""운송장번호\s*[:：]\s*([0-9\-]{9,20})""")
     }

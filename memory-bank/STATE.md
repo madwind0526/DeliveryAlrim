@@ -5,7 +5,7 @@
 - **Wave:** 6
 - **Status:** In Progress
 - **Cache Status:** CLEAN
-- **Last Checkpoint:** 2026-07-07 code-review.md 지적사항 추가 반영, User 화면 secure-storage 전체 재조회 비효율 수정, debug 빌드와 실기기 업데이트 검증
+- **Last Checkpoint:** 2026-07-07 Gmail/Naver/SMS 알림 리스너 구현, Flutter RuleEngine 동기화 경로 연결
 
 ## Wave History
 
@@ -31,4 +31,4 @@
 - Android 업데이트는 `adb install -r`로 진행해 secure storage의 기존 로그인 정보를 보존한다.
 - `code-review.md` 기준 수정된 항목: secure storage 실패 방어, 수동 등록 운송장 패턴 검증, 카카오 최신 캡처 clear, 릴리즈 빌드 테스트 주입 UI 숨김, 네이티브/Drift 동일 SQLite 동시 쓰기 제거, deliveredAt 보존, 접근성 root recycle, 하단 네비게이션 접근성 label 복구, User 화면 저장/삭제/추가 후 secure-storage 전체 재조회 제거.
 - User 소스 on/off 상태는 secure storage에 저장하며, 카카오톡 자동 동기화는 카카오톡 on/off 상태를 따른다.
-- 남은 구조 이슈: NotificationListener 실제 파서 구현, Gmail/IMAP 실제 연결, Android SMS 권한/수신 연결, 카카오톡 계정 적용 범위 정리, 배터리 최적화 대응.
+- 남은 구조 이슈: 외부 Gmail/Naver/SMS 알림 실기기 E2E 검증, Gmail/IMAP 직접 수집 여부 결정, 카카오톡 계정 적용 범위 정리, 배터리 최적화 대응.

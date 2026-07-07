@@ -6,9 +6,9 @@
 - 앱 이름은 `배송알리미`를 사용한다.
 - Windows는 세로형 디버그 창으로 먼저 검증하고, Android 실기기에서 최종 확인한다.
 - Gmail/문자/SNS 모니터링 소스의 로그인 정보는 항상 secure storage에 암호화 저장한다.
-- 카카오톡 배송 정보 수집은 NotificationListenerService + AccessibilityService 조합으로 진행하되, 접근성 서비스는 원문 캡처만 저장하고 배송 파싱/DB 쓰기는 Flutter RuleEngine + ParcelRepository 단일 경로로 처리한다.
+- Gmail/네이버 메일/SMS는 NotificationListenerService가 알림 원문을 큐에 저장하고, 카카오톡은 AccessibilityService가 원문을 큐에 저장한다. 배송 파싱/DB 쓰기는 Flutter RuleEngine + ParcelRepository 단일 경로로 처리한다.
 - User 화면은 이메일/SMS/SNS 모니터링 소스와 로그인 정보 관리용이며, 소스 on/off 상태는 secure storage에 저장한다.
-- Settings 화면은 로컬/테스트 세그먼트로 분리한다. 로컬에는 알림 접근/접근성 시스템 설정 이동을, 테스트에는 Gmail/SMS 샘플, 카카오톡 동기화, 알림 주입 테스트만 둔다.
+- Settings 화면은 로컬/테스트 세그먼트로 분리한다. 로컬에는 알림 접근/접근성 시스템 설정 이동을, 테스트에는 Gmail/SMS 샘플, 알림 동기화, 알림 주입 테스트만 둔다.
 - 배송 수동 등록은 홈 배송 목록의 `+` FAB에서 여는 정식 기능이다.
 - `code-review.md` 확인 후 secure storage 예외 처리, 수동 운송장 검증, 카카오 캡처 clear, 릴리즈 테스트 UI 숨김, 카카오 DB 단일 쓰기 경로, deliveredAt 보존, 접근성 root recycle, 하단 네비게이션 접근성 label, User 상태 재조회 비효율을 수정했다.
-- 다음 주요 작업은 실제 Gmail/IMAP 연결, Android SMS 권한/수신 연결, 카카오톡 계정 적용 범위 정리, 배터리 최적화 대응이다.
+- 다음 주요 작업은 외부 Gmail/Naver/SMS 알림 실기기 E2E 검증, 카카오톡 계정 적용 범위 정리, 배터리 최적화 대응이다.
