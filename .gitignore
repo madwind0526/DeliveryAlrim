@@ -34,6 +34,9 @@ android_*.xml
 android_*.png
 kakaotalk_*_window.png
 
+# Local-only review notes, not meant to be tracked/shared
+code-review.md
+
 # IDE / OS
 .idea/
 .vscode/
