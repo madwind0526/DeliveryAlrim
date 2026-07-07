@@ -38,10 +38,9 @@ enum ParcelStatus {
 
   Color get color => switch (this) {
     registered || preparing => const Color(0xFF9E9E9E),
-    pickedUp || inTransit => const Color(0xFF42A5F5),
-    outForDelivery => const Color(0xFF7C6AF7),
-    delivered => const Color(0xFF4ADE80),
-    expired || invalid => const Color(0xFFF87171),
+    pickedUp || inTransit || outForDelivery => const Color(0xFF6B6B6B),
+    delivered => const Color(0xFF7A7A7A),
+    expired || invalid => const Color(0xFF5F5F5F),
   };
 }
 

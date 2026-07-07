@@ -7,6 +7,7 @@ import '../../core/constants/couriers.dart';
 import '../../core/providers.dart';
 import '../../core/strings_ko.dart';
 import '../parcels/models/parcel.dart';
+import '../parcels/widgets/parcel_status_badge.dart';
 
 final allParcelsProvider = StreamProvider<List<Parcel>>(
   (ref) => ref.watch(parcelRepositoryProvider).watchAll(),
@@ -147,15 +148,7 @@ class _DayParcelTile extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
         ),
         subtitle: Text('$courierName · $badge'),
-        trailing: Chip(
-          label: Text(
-            parcel.status.labelKo,
-            style: const TextStyle(fontSize: 12, color: Colors.white),
-          ),
-          backgroundColor: parcel.status.color,
-          visualDensity: VisualDensity.compact,
-          side: BorderSide.none,
-        ),
+        trailing: ParcelStatusBadge(status: parcel.status),
         onTap: () => context.push('/parcel/${parcel.id}'),
       ),
     );

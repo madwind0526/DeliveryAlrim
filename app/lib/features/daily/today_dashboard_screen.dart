@@ -7,6 +7,7 @@ import '../../core/constants/couriers.dart';
 import '../../core/providers.dart';
 import '../../core/strings_ko.dart';
 import '../parcels/models/parcel.dart';
+import '../parcels/widgets/parcel_status_badge.dart';
 
 final todayParcelsProvider = StreamProvider<List<Parcel>>(
   (ref) => ref.watch(parcelRepositoryProvider).watchAll(),
@@ -271,15 +272,7 @@ class _TodayParcelTile extends StatelessWidget {
             if (!parcel.trackingNumber.startsWith('cp:')) parcel.trackingNumber,
           ].join(' · '),
         ),
-        trailing: Chip(
-          label: Text(
-            parcel.status.labelKo,
-            style: const TextStyle(fontSize: 12, color: Colors.white),
-          ),
-          backgroundColor: parcel.status.color,
-          visualDensity: VisualDensity.compact,
-          side: BorderSide.none,
-        ),
+        trailing: ParcelStatusBadge(status: parcel.status),
       ),
     );
   }
