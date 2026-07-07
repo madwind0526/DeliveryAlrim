@@ -20,6 +20,7 @@ COURIERS = [
 
 STATUS_PHRASES = {
     "registered": "주문이 접수되었습니다",
+    "preparing": "상품 준비 중입니다",
     "picked_up": "택배 상품을 집화하였습니다",
     "in_transit": "상품이 배송 중입니다",
     "out_for_delivery": "상품이 배송 출발하였습니다. 금일 중 도착 예정입니다",
