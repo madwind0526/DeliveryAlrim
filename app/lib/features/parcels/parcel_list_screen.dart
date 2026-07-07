@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../../core/app_background_button.dart';
 import '../../core/constants/couriers.dart';
+import '../../core/courier_registry.dart';
 import '../../core/providers.dart';
 import '../../core/strings_ko.dart';
 import 'models/parcel.dart';
@@ -20,7 +21,10 @@ class ParcelListScreen extends ConsumerStatefulWidget {
 class _ParcelListScreenState extends ConsumerState<ParcelListScreen> {
   String? _selectedCourier;
 
-  Future<void> _showCompanyPicker(BuildContext context) async {
+  Future<void> _showCompanyPicker(
+    BuildContext context,
+    List<Courier> couriers,
+  ) async {
     final selected = await showDialog<String?>(
       context: context,
       builder: (context) => SimpleDialog(
@@ -36,7 +40,7 @@ class _ParcelListScreenState extends ConsumerState<ParcelListScreen> {
             child: ListView(
               shrinkWrap: true,
               children: [
-                for (final courier in Couriers.all)
+                for (final courier in couriers)
                   SimpleDialogOption(
                     onPressed: () => Navigator.pop(context, courier.code),
                     child: Text(courier.nameKo),
@@ -52,10 +56,17 @@ class _ParcelListScreenState extends ConsumerState<ParcelListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final couriers =
+        ref
+            .watch(courierListProvider)
+            .maybeWhen(data: (v) => v, orElse: () => null) ??
+        Couriers.all;
+    // Custom (non-built-in) couriers use their own name as their code, so
+    // this fallback already shows the right label without a registry
+    // lookup — see CourierRegistry.resolve.
     final title = _selectedCourier == null
         ? StringsKo.parcelListTitle
-        : Couriers.byCode(_selectedCourier!)?.nameKo ??
-              StringsKo.parcelListTitle;
+        : Couriers.byCode(_selectedCourier!)?.nameKo ?? _selectedCourier!;
 
     return DefaultTabController(
       length: 2,
@@ -66,7 +77,7 @@ class _ParcelListScreenState extends ConsumerState<ParcelListScreen> {
             IconButton(
               tooltip: StringsKo.companyPickerTitle,
               icon: const Icon(Icons.storefront_outlined),
-              onPressed: () => _showCompanyPicker(context),
+              onPressed: () => _showCompanyPicker(context, couriers),
             ),
             const AppBackgroundButton(),
           ],

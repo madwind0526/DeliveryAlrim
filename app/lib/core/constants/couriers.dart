@@ -55,7 +55,7 @@ abstract final class Couriers {
   );
   static const coupangDirect = Courier(
     code: 'coupang_direct',
-    nameKo: '쿠팡 로켓배송',
+    nameKo: '쿠팡 배송',
     sweettrackerCode: null,
     invoicePattern: r'^cp:[0-9a-f]{40}$',
     isDirect: true,

@@ -22,3 +22,7 @@ final activeParcelsProvider = StreamProvider<List<Parcel>>(
 final doneParcelsProvider = StreamProvider<List<Parcel>>(
   (ref) => ref.watch(parcelRepositoryProvider).watchDone(),
 );
+
+final allParcelsProvider = StreamProvider<List<Parcel>>(
+  (ref) => ref.watch(parcelRepositoryProvider).watchAll(),
+);

@@ -7,6 +7,7 @@ import 'core/app_background_bridge.dart';
 import 'core/responsive_text_policy.dart';
 import 'core/strings_ko.dart';
 import 'core/theme.dart';
+import 'core/theme_preference.dart';
 import 'features/capture/kakao_capture_sync.dart';
 
 class CheckShippingApp extends ConsumerStatefulWidget {
@@ -28,6 +29,12 @@ class _CheckShippingAppState extends ConsumerState<CheckShippingApp>
       ref.read(routerProvider).go('/');
     });
     WidgetsBinding.instance.addPostFrameCallback((_) => _syncLatestCapture());
+    _loadThemeMode();
+  }
+
+  Future<void> _loadThemeMode() async {
+    final mode = await ref.read(themeModeStoreProvider).read();
+    ref.read(themeModeNotifierProvider).value = mode;
   }
 
   @override
@@ -58,27 +65,35 @@ class _CheckShippingAppState extends ConsumerState<CheckShippingApp>
   @override
   Widget build(BuildContext context) {
     final router = ref.watch(routerProvider);
-    return MaterialApp.router(
-      title: StringsKo.appTitle,
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.dark(),
-      routerConfig: router,
-      builder: (context, child) {
-        final media = MediaQuery.of(context);
-        return MediaQuery(
-          data: media.copyWith(
-            textScaler: ResponsiveTextPolicy.scalerFor(media),
-          ),
-          child: child ?? const SizedBox.shrink(),
+    final themeModeNotifier = ref.watch(themeModeNotifierProvider);
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: themeModeNotifier,
+      builder: (context, themeMode, _) {
+        return MaterialApp.router(
+          title: StringsKo.appTitle,
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.light(),
+          darkTheme: AppTheme.dark(),
+          themeMode: themeMode,
+          routerConfig: router,
+          builder: (context, child) {
+            final media = MediaQuery.of(context);
+            return MediaQuery(
+              data: media.copyWith(
+                textScaler: ResponsiveTextPolicy.scalerFor(media),
+              ),
+              child: child ?? const SizedBox.shrink(),
+            );
+          },
+          locale: const Locale('ko'),
+          supportedLocales: const [Locale('ko'), Locale('en')],
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
         );
       },
-      locale: const Locale('ko'),
-      supportedLocales: const [Locale('ko'), Locale('en')],
-      localizationsDelegates: const [
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
     );
   }
 }

@@ -11,17 +11,35 @@ import 'parse_rule.dart';
 class RuleEngine {
   final RuleSet ruleSet;
 
-  RuleEngine(this.ruleSet);
+  /// Active courier list (built-ins ∪ user-added, per Settings > 로컬).
+  /// Defaults to the bundled built-ins when not supplied (e.g. in tests).
+  final List<Courier> couriers;
+
+  RuleEngine(this.ruleSet, {List<Courier>? couriers})
+    : couriers = couriers ?? Couriers.all;
+
+  late final Map<String, Courier> _courierByCode = {
+    for (final c in couriers) c.code: c,
+  };
 
   /// Courier detection by keyword co-occurrence. A tracking-looking number
   /// with no courier keyword in the same text is rejected on purpose
-  /// (kills phone/order-number false positives).
-  static final List<(RegExp, String)> _courierKeywords = [
+  /// (kills phone/order-number false positives). Built-in couriers use
+  /// hand-tuned alias regexes; user-added couriers fall back to a literal
+  /// name match.
+  static final List<(RegExp, String)> _builtinCourierKeywords = [
     (RegExp(r'CJ\s*대한통운|대한통운'), 'cj'),
     (RegExp(r'한진\s*택배|한진'), 'hanjin'),
     (RegExp(r'롯데\s*(글로벌\s*로지스)?\s*택배|롯데택배|롯데'), 'lotte'),
     (RegExp(r'우체국'), 'epost'),
     (RegExp(r'로젠'), 'logen'),
+  ];
+
+  late final List<(RegExp, String)> _courierKeywords = [
+    ..._builtinCourierKeywords,
+    for (final c in couriers)
+      if (!_builtinCourierKeywords.any((k) => k.$2 == c.code))
+        (RegExp(RegExp.escape(c.nameKo)), c.code),
   ];
 
   /// Status keywords, checked in order — most terminal first so that
@@ -71,7 +89,11 @@ class RuleEngine {
         lastReason = ParseRejectReason.noCourier;
         continue;
       }
-      final courier = Couriers.byCode(courierCode)!;
+      final courier = _courierByCode[courierCode] ?? Couriers.byCode(courierCode);
+      if (courier == null) {
+        lastReason = ParseRejectReason.noCourier;
+        continue;
+      }
       if (!RegExp(courier.invoicePattern).hasMatch(invoice)) {
         lastReason = ParseRejectReason.invalidInvoice;
         continue;

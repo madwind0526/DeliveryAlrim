@@ -1,6 +1,7 @@
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/courier_registry.dart';
 import 'parser/parse_rule.dart';
 import 'parser/rule_engine.dart';
 
@@ -15,5 +16,6 @@ final ruleSetProvider = FutureProvider<RuleSet>((ref) async {
 
 final ruleEngineProvider = FutureProvider<RuleEngine>((ref) async {
   final ruleSet = await ref.watch(ruleSetProvider.future);
-  return RuleEngine(ruleSet);
+  final couriers = await ref.watch(courierListProvider.future);
+  return RuleEngine(ruleSet, couriers: couriers);
 });

@@ -1,25 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../core/app_background_button.dart';
 import '../../core/adaptive_text.dart';
-import '../../core/constants/couriers.dart';
 import '../../core/providers.dart';
 import '../../core/strings_ko.dart';
 import '../parcels/models/parcel.dart';
-import '../parcels/widgets/parcel_status_badge.dart';
-
-final todayParcelsProvider = StreamProvider<List<Parcel>>(
-  (ref) => ref.watch(parcelRepositoryProvider).watchAll(),
-);
+import '../parcels/widgets/parcel_summary_section.dart';
 
 class TodayDashboardScreen extends ConsumerWidget {
   const TodayDashboardScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final parcelsAsync = ref.watch(todayParcelsProvider);
+    final parcelsAsync = ref.watch(allParcelsProvider);
     return Scaffold(
       appBar: AppBar(
         title: const AdaptiveText(StringsKo.todaySummaryTitle),
@@ -52,29 +46,43 @@ class TodayDashboardScreen extends ConsumerWidget {
           return ListView(
             padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
             children: [
-              _SummaryStrip(
-                ordered: ordered.length,
-                inTransit: inTransit.length,
-                completedToday: completedToday.length,
-                dueToday: dueToday.length,
+              ParcelSummaryStrip(
+                items: [
+                  ParcelSummaryItem(
+                    label: StringsKo.todayOrdered,
+                    value: ordered.length,
+                  ),
+                  ParcelSummaryItem(
+                    label: StringsKo.todayInTransit,
+                    value: inTransit.length,
+                  ),
+                  ParcelSummaryItem(
+                    label: StringsKo.todayCompleted,
+                    value: completedToday.length,
+                  ),
+                  ParcelSummaryItem(
+                    label: StringsKo.todayDue,
+                    value: dueToday.length,
+                  ),
+                ],
               ),
               const SizedBox(height: 12),
-              _TodaySection(
+              ParcelSection(
                 title: StringsKo.todayOrdered,
                 icon: Icons.receipt_long_outlined,
                 parcels: ordered,
               ),
-              _TodaySection(
+              ParcelSection(
                 title: StringsKo.todayInTransit,
                 icon: Icons.local_shipping_outlined,
                 parcels: inTransit,
               ),
-              _TodaySection(
+              ParcelSection(
                 title: StringsKo.todayCompleted,
                 icon: Icons.check_circle_outline,
                 parcels: completedToday,
               ),
-              _TodaySection(
+              ParcelSection(
                 title: StringsKo.todayDue,
                 icon: Icons.event_available_outlined,
                 parcels: dueToday,
@@ -129,155 +137,5 @@ class TodayDashboardScreen extends ConsumerWidget {
       if (expected == null) return false;
       return DateUtils.isSameDay(expected, today);
     }).toList()..sort((a, b) => b.registeredAt.compareTo(a.registeredAt));
-  }
-}
-
-class _SummaryStrip extends StatelessWidget {
-  final int ordered;
-  final int inTransit;
-  final int completedToday;
-  final int dueToday;
-
-  const _SummaryStrip({
-    required this.ordered,
-    required this.inTransit,
-    required this.completedToday,
-    required this.dueToday,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final compact = MediaQuery.sizeOf(context).width < 520;
-    return GridView.count(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: compact ? 2 : 4,
-      crossAxisSpacing: 8,
-      mainAxisSpacing: 8,
-      childAspectRatio: compact ? 2.0 : 1.6,
-      children: [
-        _SummaryItem(label: StringsKo.todayOrdered, value: ordered),
-        _SummaryItem(label: StringsKo.todayInTransit, value: inTransit),
-        _SummaryItem(label: StringsKo.todayCompleted, value: completedToday),
-        _SummaryItem(label: StringsKo.todayDue, value: dueToday),
-      ],
-    );
-  }
-}
-
-class _SummaryItem extends StatelessWidget {
-  final String label;
-  final int value;
-
-  const _SummaryItem({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-      decoration: BoxDecoration(
-        border: Border.all(color: colors.outlineVariant),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Center(
-        child: FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              AdaptiveText(
-                '$value',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 2),
-              AdaptiveText(
-                label,
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: colors.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _TodaySection extends StatelessWidget {
-  final String title;
-  final IconData icon;
-  final List<Parcel> parcels;
-
-  const _TodaySection({
-    required this.title,
-    required this.icon,
-    required this.parcels,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, size: 18),
-              const SizedBox(width: 8),
-              Expanded(
-                child: AdaptiveText(
-                  '$title ${parcels.length}',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          if (parcels.isEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              child: Text(
-                StringsKo.todaySectionEmpty,
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
-            )
-          else
-            for (final parcel in parcels) _TodayParcelTile(parcel: parcel),
-        ],
-      ),
-    );
-  }
-}
-
-class _TodayParcelTile extends StatelessWidget {
-  final Parcel parcel;
-
-  const _TodayParcelTile({required this.parcel});
-
-  @override
-  Widget build(BuildContext context) {
-    final courierName =
-        Couriers.byCode(parcel.courierCode)?.nameKo ?? parcel.courierCode;
-    return Card(
-      child: ListTile(
-        onTap: () => context.push('/parcel/${parcel.id}'),
-        title: AdaptiveText(parcel.productName ?? StringsKo.unknownProduct),
-        subtitle: AdaptiveText(
-          [
-            courierName,
-            if (parcel.mallName != null) parcel.mallName!,
-            if (!parcel.trackingNumber.startsWith('cp:')) parcel.trackingNumber,
-          ].join(' · '),
-        ),
-        trailing: ParcelStatusBadge(status: parcel.status),
-      ),
-    );
   }
 }

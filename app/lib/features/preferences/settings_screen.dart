@@ -4,7 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/app_background_button.dart';
+import '../../core/constants/couriers.dart';
+import '../../core/courier_registry.dart';
+import '../../core/providers.dart';
 import '../../core/strings_ko.dart';
+import '../../core/theme_preference.dart';
 import '../capture/kakao_capture_sync.dart';
 import '../debug/capture_test_runner.dart';
 import '../debug/capture_test_samples.dart';
@@ -112,6 +116,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
     }
   }
 
+  Future<void> _setThemeMode(ThemeMode mode) async {
+    ref.read(themeModeNotifierProvider).value = mode;
+    await ref.read(themeModeStoreProvider).write(mode);
+  }
+
   Future<void> _rescanActiveNotifications() async {
     if (_rescanningNotifications) return;
     setState(() => _rescanningNotifications = true);
@@ -163,18 +172,23 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                 _mode = value.single;
               }),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 24),
           ],
           if (mode == StringsKo.settingModeLocal)
-            _LocalSettingsSection(
-              notificationAccess: _notificationAccess,
-              accessibilityAccess: _accessibilityAccess,
-              openingSettings: _openingSettings,
-              onOpenNotificationSettings: () => _openSystemSettings(
-                _androidSettings.openNotificationAccessSettings,
-              ),
-              onOpenAccessibilitySettings: () => _openSystemSettings(
-                _androidSettings.openAccessibilitySettings,
+            ValueListenableBuilder<ThemeMode>(
+              valueListenable: ref.watch(themeModeNotifierProvider),
+              builder: (context, themeMode, _) => _LocalSettingsSection(
+                themeMode: themeMode,
+                onThemeModeChanged: _setThemeMode,
+                notificationAccess: _notificationAccess,
+                accessibilityAccess: _accessibilityAccess,
+                openingSettings: _openingSettings,
+                onOpenNotificationSettings: () => _openSystemSettings(
+                  _androidSettings.openNotificationAccessSettings,
+                ),
+                onOpenAccessibilitySettings: () => _openSystemSettings(
+                  _androidSettings.openAccessibilitySettings,
+                ),
               ),
             )
           else
@@ -194,6 +208,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
 }
 
 class _LocalSettingsSection extends StatelessWidget {
+  final ThemeMode themeMode;
+  final ValueChanged<ThemeMode> onThemeModeChanged;
   final bool notificationAccess;
   final bool accessibilityAccess;
   final bool openingSettings;
@@ -201,6 +217,8 @@ class _LocalSettingsSection extends StatelessWidget {
   final VoidCallback onOpenAccessibilitySettings;
 
   const _LocalSettingsSection({
+    required this.themeMode,
+    required this.onThemeModeChanged,
     required this.notificationAccess,
     required this.accessibilityAccess,
     required this.openingSettings,
@@ -211,7 +229,31 @@ class _LocalSettingsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        ListTile(
+          leading: const Icon(Icons.brightness_6_outlined),
+          title: const Text('Theme'),
+          trailing: SegmentedButton<ThemeMode>(
+            segments: const [
+              ButtonSegment(
+                value: ThemeMode.light,
+                icon: Icon(Icons.light_mode_outlined, size: 18),
+                label: Text('Light'),
+              ),
+              ButtonSegment(
+                value: ThemeMode.dark,
+                icon: Icon(Icons.dark_mode_outlined, size: 18),
+                label: Text('Dark'),
+              ),
+            ],
+            selected: {themeMode},
+            onSelectionChanged: (value) => onThemeModeChanged(value.single),
+            showSelectedIcon: false,
+            style: const ButtonStyle(visualDensity: VisualDensity.compact),
+          ),
+        ),
+        const SizedBox(height: 16),
         _SystemPermissionTile(
           title: StringsKo.settingNotifications,
           value: notificationAccess,
@@ -228,6 +270,139 @@ class _LocalSettingsSection extends StatelessWidget {
           hint: StringsKo.settingAccessibilitySystemHint,
           openingSettings: openingSettings,
           onOpenSettings: onOpenAccessibilitySettings,
+        ),
+        const SizedBox(height: 20),
+        const _CourierManagementSection(),
+      ],
+    );
+  }
+}
+
+class _CourierManagementSection extends ConsumerStatefulWidget {
+  const _CourierManagementSection();
+
+  @override
+  ConsumerState<_CourierManagementSection> createState() =>
+      _CourierManagementSectionState();
+}
+
+class _CourierManagementSectionState
+    extends ConsumerState<_CourierManagementSection> {
+  final _controller = TextEditingController();
+  List<String>? _names;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    final registry = ref.read(courierRegistryProvider);
+    var names = await registry.readNames();
+
+    // Reconcile: a courier already used by an existing parcel (e.g. one
+    // removed from this list after data was captured under it, or seeded
+    // by a test sample) would otherwise be unselectable/undetectable going
+    // forward, so add it back automatically.
+    final parcels = await ref.read(parcelRepositoryProvider).watchAll().first;
+    final usedNames = parcels
+        .map((p) => Couriers.byCode(p.courierCode)?.nameKo ?? p.courierCode)
+        .toSet();
+    final missing = usedNames.difference(names.toSet());
+    for (final name in missing) {
+      names = await registry.addName(name);
+    }
+    if (missing.isNotEmpty) {
+      ref.invalidate(courierListProvider);
+    }
+
+    if (!mounted) return;
+    setState(() => _names = names);
+  }
+
+  Future<void> _add() async {
+    final name = _controller.text.trim();
+    if (name.isEmpty) return;
+    final updated = await ref.read(courierRegistryProvider).addName(name);
+    _controller.clear();
+    ref.invalidate(courierListProvider);
+    if (!mounted) return;
+    setState(() => _names = updated);
+  }
+
+  Future<void> _remove(String name) async {
+    final updated = await ref.read(courierRegistryProvider).removeName(name);
+    ref.invalidate(courierListProvider);
+    if (!mounted) return;
+    setState(() => _names = updated);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final names = _names;
+    final colors = Theme.of(context).colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          StringsKo.settingCourierList,
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+        const SizedBox(height: 4),
+        Text(
+          StringsKo.settingCourierHint,
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
+        ),
+        const SizedBox(height: 8),
+        if (names == null)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12),
+            child: Center(child: CircularProgressIndicator()),
+          )
+        else if (names.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Text(
+              StringsKo.settingCourierEmpty,
+              style: TextStyle(color: colors.onSurfaceVariant),
+            ),
+          )
+        else
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final name in names)
+                InputChip(label: Text(name), onDeleted: () => _remove(name)),
+            ],
+          ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _controller,
+                decoration: const InputDecoration(
+                  hintText: StringsKo.settingCourierAddHint,
+                  border: OutlineInputBorder(),
+                  isDense: true,
+                ),
+                textInputAction: TextInputAction.done,
+                onSubmitted: (_) => _add(),
+              ),
+            ),
+            const SizedBox(width: 8),
+            IconButton.filled(onPressed: _add, icon: const Icon(Icons.add)),
+          ],
         ),
       ],
     );
@@ -313,46 +488,59 @@ class _TestSettingsSection extends StatelessWidget {
           style: Theme.of(context).textTheme.titleMedium,
         ),
         const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            FilledButton.icon(
-              onPressed: sendingTest ? null : onSendGmailTest,
-              icon: const Icon(Icons.mail_outline),
-              label: const Text(StringsKo.sendGmailTest),
-            ),
-            FilledButton.tonalIcon(
-              onPressed: sendingTest ? null : onSendSmsTest,
-              icon: const Icon(Icons.sms_outlined),
-              label: const Text(StringsKo.sendSmsTest),
-            ),
-            FilledButton.tonalIcon(
-              onPressed: syncingKakao ? null : onSyncKakao,
-              icon: syncingKakao
-                  ? const SizedBox.square(
-                      dimension: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.sync),
-              label: const Text(StringsKo.userKakaoSync),
-            ),
-            FilledButton.tonalIcon(
-              onPressed: rescanningNotifications ? null : onRescanNotifications,
-              icon: rescanningNotifications
-                  ? const SizedBox.square(
-                      dimension: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.notifications_active_outlined),
-              label: const Text(StringsKo.activeNotificationRescan),
-            ),
-            OutlinedButton.icon(
-              onPressed: () => context.push('/debug/replay'),
-              icon: const Icon(Icons.science_outlined),
-              label: const Text(StringsKo.replayTitle),
-            ),
-          ],
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton.icon(
+            onPressed: sendingTest ? null : onSendGmailTest,
+            icon: const Icon(Icons.mail_outline),
+            label: const Text(StringsKo.sendGmailTest),
+          ),
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton.tonalIcon(
+            onPressed: sendingTest ? null : onSendSmsTest,
+            icon: const Icon(Icons.sms_outlined),
+            label: const Text(StringsKo.sendSmsTest),
+          ),
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton.tonalIcon(
+            onPressed: syncingKakao ? null : onSyncKakao,
+            icon: syncingKakao
+                ? const SizedBox.square(
+                    dimension: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.sync),
+            label: const Text(StringsKo.userKakaoSync),
+          ),
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton.tonalIcon(
+            onPressed: rescanningNotifications ? null : onRescanNotifications,
+            icon: rescanningNotifications
+                ? const SizedBox.square(
+                    dimension: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.notifications_active_outlined),
+            label: const Text(StringsKo.activeNotificationRescan),
+          ),
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: () => context.push('/debug/replay'),
+            icon: const Icon(Icons.science_outlined),
+            label: const Text(StringsKo.replayTitle),
+          ),
         ),
       ],
     );

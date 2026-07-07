@@ -10,20 +10,17 @@ import '../../core/strings_ko.dart';
 import '../parcels/models/parcel.dart';
 import '../parcels/widgets/parcel_status_badge.dart';
 
-final allParcelsProvider = StreamProvider<List<Parcel>>(
-  (ref) => ref.watch(parcelRepositoryProvider).watchAll(),
-);
-
 /// Day (date-only) → parcels arriving or delivered that day.
-/// Active parcels count on expectedArrivalDate; done ones on deliveredAt.
+/// Done parcels count on deliveredAt; active ones on expectedArrivalDate
+/// when known, falling back to registeredAt so an in-transit parcel with
+/// no arrival estimate yet still shows up somewhere instead of vanishing.
 final parcelsByDayProvider = Provider<AsyncValue<Map<DateTime, List<Parcel>>>>((
   ref,
 ) {
   return ref.watch(allParcelsProvider).whenData((parcels) {
     final map = <DateTime, List<Parcel>>{};
     for (final p in parcels) {
-      final date = p.deliveredAt ?? p.expectedArrivalDate;
-      if (date == null) continue;
+      final date = p.deliveredAt ?? p.expectedArrivalDate ?? p.registeredAt;
       final day = DateTime(date.year, date.month, date.day);
       (map[day] ??= []).add(p);
     }
