@@ -4,8 +4,8 @@
 
 - **Wave:** 6
 - **Status:** In Progress
-- **Cache Status:** CLEAN
-- **Last Checkpoint:** 2026-07-07 Gmail/Naver/SMS 알림 리스너 구현, 실기기 Gmail 알림 4건 DB 등록 확인
+- **Cache Status:** DIRTY
+- **Last Checkpoint:** 2026-07-11 실기기 E2E 5종 시나리오 전부 통과: 신규 등록, 배달완료 전환, 상태 역행 방지, 광고 필터, 피싱 격리. Gmail 개별 알림 5건 동시 캡처 확인(묶음 알림 유실 없음). 캘린더 날짜별 스냅샷/월·주 토글도 실기기 확인 완료
 
 ## Wave History
 
