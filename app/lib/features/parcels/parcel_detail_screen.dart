@@ -7,6 +7,7 @@ import '../../core/constants/couriers.dart';
 import '../../core/providers.dart';
 import '../../core/strings_ko.dart';
 import '../capture/capture_models.dart';
+import '../tracking/tracking_refresh_service.dart';
 import 'models/parcel.dart';
 import 'models/tracking_event.dart';
 
@@ -58,6 +59,7 @@ class ParcelDetailScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text(StringsKo.detailTitle),
         actions: [
+          _RefreshAction(parcelId: parcelId),
           IconButton(
             tooltip: StringsKo.deleteParcel,
             icon: const Icon(Icons.delete_outline),
@@ -102,6 +104,61 @@ class ParcelDetailScreen extends ConsumerWidget {
           );
         },
       ),
+    );
+  }
+}
+
+/// Optional Sweet Tracker one-shot query for this parcel. No API key
+/// registered → snackbar pointing to Settings; the feature stays off.
+class _RefreshAction extends ConsumerStatefulWidget {
+  final String parcelId;
+
+  const _RefreshAction({required this.parcelId});
+
+  @override
+  ConsumerState<_RefreshAction> createState() => _RefreshActionState();
+}
+
+class _RefreshActionState extends ConsumerState<_RefreshAction> {
+  bool _busy = false;
+
+  Future<void> _refresh() async {
+    if (_busy) return;
+    final parcel = ref.read(_parcelByIdProvider(widget.parcelId)).value;
+    if (parcel == null) return;
+    setState(() => _busy = true);
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final result = await ref
+          .read(trackingRefreshServiceProvider)
+          .refreshParcel(parcel);
+      final text = switch (result.outcome) {
+        RefreshOutcome.updated => StringsKo.trackingRefreshUpdated,
+        RefreshOutcome.unchanged => StringsKo.trackingRefreshNoChange,
+        RefreshOutcome.unsupported => StringsKo.trackingRefreshUnsupported,
+        RefreshOutcome.alreadyDone => StringsKo.trackingRefreshAlreadyDone,
+        RefreshOutcome.missingKey => StringsKo.trackingRefreshMissingKey,
+        RefreshOutcome.quotaExceeded => StringsKo.trackingQuotaExceeded,
+        RefreshOutcome.failed =>
+          '${StringsKo.trackingRefreshFailed}: ${result.message ?? ''}',
+      };
+      messenger.showSnackBar(SnackBar(content: Text(text)));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      tooltip: StringsKo.trackingRefresh,
+      icon: _busy
+          ? const SizedBox.square(
+              dimension: 18,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : const Icon(Icons.refresh),
+      onPressed: _busy ? null : _refresh,
     );
   }
 }

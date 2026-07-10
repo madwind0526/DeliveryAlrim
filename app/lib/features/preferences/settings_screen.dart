@@ -10,8 +10,10 @@ import '../../core/providers.dart';
 import '../../core/strings_ko.dart';
 import '../../core/theme_preference.dart';
 import '../capture/kakao_capture_sync.dart';
+import '../capture/quarantine_store.dart';
 import '../debug/capture_test_runner.dart';
 import '../debug/capture_test_samples.dart';
+import '../tracking/tracking_api_settings.dart';
 import 'android_settings_bridge.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -271,8 +273,168 @@ class _LocalSettingsSection extends StatelessWidget {
           openingSettings: openingSettings,
           onOpenSettings: onOpenAccessibilitySettings,
         ),
+        const SizedBox(height: 8),
+        const _QuarantineTile(),
+        const SizedBox(height: 20),
+        const _TrackingApiSection(),
         const SizedBox(height: 20),
         const _CourierManagementSection(),
+      ],
+    );
+  }
+}
+
+class _QuarantineTile extends ConsumerWidget {
+  const _QuarantineTile();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final count = ref
+        .watch(quarantineCountProvider)
+        .maybeWhen(data: (v) => v, orElse: () => 0);
+    final colors = Theme.of(context).colorScheme;
+    return ListTile(
+      leading: Icon(
+        Icons.gpp_maybe_outlined,
+        color: count > 0 ? colors.error : null,
+      ),
+      title: const Text(StringsKo.quarantineTitle),
+      subtitle: const Text(StringsKo.quarantineSettingHint),
+      trailing: count > 0
+          ? Badge(label: Text('$count'), backgroundColor: colors.error)
+          : const Icon(Icons.chevron_right),
+      onTap: () => context.push('/quarantine'),
+    );
+  }
+}
+
+class _TrackingApiSection extends ConsumerStatefulWidget {
+  const _TrackingApiSection();
+
+  @override
+  ConsumerState<_TrackingApiSection> createState() =>
+      _TrackingApiSectionState();
+}
+
+class _TrackingApiSectionState extends ConsumerState<_TrackingApiSection> {
+  final _controller = TextEditingController();
+  bool _hasKey = false;
+  int _usedToday = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    final key = await ref.read(sweettrackerKeyStoreProvider).read();
+    final used = await ref.read(trackingQuotaStoreProvider).usedToday();
+    if (!mounted) return;
+    setState(() {
+      _hasKey = key != null;
+      _usedToday = used;
+    });
+  }
+
+  Future<void> _save() async {
+    final key = _controller.text.trim();
+    if (key.isEmpty) return;
+    final messenger = ScaffoldMessenger.of(context);
+    await ref.read(sweettrackerKeyStoreProvider).write(key);
+    _controller.clear();
+    if (!mounted) return;
+    setState(() => _hasKey = true);
+    messenger.showSnackBar(
+      const SnackBar(content: Text(StringsKo.trackingApiKeySaved)),
+    );
+  }
+
+  Future<void> _delete() async {
+    final messenger = ScaffoldMessenger.of(context);
+    await ref.read(sweettrackerKeyStoreProvider).delete();
+    if (!mounted) return;
+    setState(() => _hasKey = false);
+    messenger.showSnackBar(
+      const SnackBar(content: Text(StringsKo.trackingApiKeyDeleted)),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          StringsKo.trackingApiSection,
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+        const SizedBox(height: 4),
+        Text(
+          StringsKo.trackingApiHint,
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Icon(
+              _hasKey ? Icons.key : Icons.key_off_outlined,
+              size: 18,
+              color: _hasKey ? colors.primary : colors.onSurfaceVariant,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              _hasKey
+                  ? StringsKo.trackingApiKeyRegistered
+                  : StringsKo.trackingApiKeyMissing,
+            ),
+            if (_hasKey) ...[
+              const SizedBox(width: 12),
+              Text(
+                '${StringsKo.trackingApiUsageToday}: $_usedToday/'
+                '${DailyQuotaStore.defaultDailyLimit}',
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
+              ),
+            ],
+          ],
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _controller,
+                obscureText: true,
+                decoration: const InputDecoration(
+                  hintText: StringsKo.trackingApiKeyInputHint,
+                  border: OutlineInputBorder(),
+                  isDense: true,
+                ),
+                textInputAction: TextInputAction.done,
+                onSubmitted: (_) => _save(),
+              ),
+            ),
+            const SizedBox(width: 8),
+            IconButton.filled(onPressed: _save, icon: const Icon(Icons.save_outlined)),
+            if (_hasKey)
+              IconButton(
+                tooltip: StringsKo.userCredentialDelete,
+                onPressed: _delete,
+                icon: const Icon(Icons.delete_outline),
+              ),
+          ],
+        ),
       ],
     );
   }

@@ -8,6 +8,7 @@ import '../../core/constants/couriers.dart';
 import '../../core/courier_registry.dart';
 import '../../core/providers.dart';
 import '../../core/strings_ko.dart';
+import '../tracking/tracking_refresh_service.dart';
 import 'models/parcel.dart';
 import 'widgets/parcel_status_badge.dart';
 
@@ -20,6 +21,37 @@ class ParcelListScreen extends ConsumerStatefulWidget {
 
 class _ParcelListScreenState extends ConsumerState<ParcelListScreen> {
   String? _selectedCourier;
+  bool _refreshingAll = false;
+
+  /// Optional Sweet Tracker sweep over active parcels; only points to
+  /// Settings when no API key is registered.
+  Future<void> _refreshAll() async {
+    if (_refreshingAll) return;
+    setState(() => _refreshingAll = true);
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final summary = await ref
+          .read(trackingRefreshServiceProvider)
+          .refreshAllActive();
+      if (!mounted) return;
+      final String text;
+      if (summary.missingKey) {
+        text = StringsKo.trackingRefreshMissingKey;
+      } else {
+        final base = StringsKo.trackingRefreshSummary(
+          updated: summary.updated,
+          unchanged: summary.unchanged,
+          failed: summary.failed,
+        );
+        text = summary.quotaExceeded
+            ? '$base · ${StringsKo.trackingQuotaReached}'
+            : base;
+      }
+      messenger.showSnackBar(SnackBar(content: Text(text)));
+    } finally {
+      if (mounted) setState(() => _refreshingAll = false);
+    }
+  }
 
   Future<void> _showCompanyPicker(
     BuildContext context,
@@ -74,6 +106,16 @@ class _ParcelListScreenState extends ConsumerState<ParcelListScreen> {
         appBar: AppBar(
           title: Text(title),
           actions: [
+            IconButton(
+              tooltip: StringsKo.trackingRefreshAll,
+              icon: _refreshingAll
+                  ? const SizedBox.square(
+                      dimension: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.refresh),
+              onPressed: _refreshingAll ? null : _refreshAll,
+            ),
             IconButton(
               tooltip: StringsKo.companyPickerTitle,
               icon: const Icon(Icons.storefront_outlined),
