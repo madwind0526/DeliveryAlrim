@@ -86,7 +86,9 @@ class ExtractedParcel {
 enum ParseRejectReason {
   noRuleMatched('noRuleMatched', '일치하는 규칙 없음'),
   noCourier('noCourier', '택배사를 찾지 못함'),
-  invalidInvoice('invalidInvoice', '운송장번호 형식 불일치');
+  invalidInvoice('invalidInvoice', '운송장번호 형식 불일치'),
+  adFiltered('adFiltered', '광고로 판단'),
+  suspectedPhishing('suspectedPhishing', '피싱 의심');
 
   final String code;
   final String labelKo;
@@ -97,8 +99,15 @@ class ParseResult {
   final ExtractedParcel? parcel;
   final ParseRejectReason? reason;
 
-  const ParseResult.success(ExtractedParcel this.parcel) : reason = null;
-  const ParseResult.rejected(ParseRejectReason this.reason) : parcel = null;
+  /// Human-readable signal that triggered ad/phishing screening
+  /// (e.g. which pattern matched). Null for ordinary rejections.
+  final String? screeningNote;
+
+  const ParseResult.success(ExtractedParcel this.parcel)
+    : reason = null,
+      screeningNote = null;
+  const ParseResult.rejected(ParseRejectReason this.reason, {this.screeningNote})
+    : parcel = null;
 
   bool get matched => parcel != null;
 }

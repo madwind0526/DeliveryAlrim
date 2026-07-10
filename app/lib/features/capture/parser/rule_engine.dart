@@ -4,6 +4,7 @@ import 'dart:convert' show utf8;
 import '../../../core/constants/couriers.dart';
 import '../../parcels/models/parcel.dart';
 import '../capture_models.dart';
+import 'capture_screener.dart';
 import 'parse_rule.dart';
 
 /// Rule-based extractor: raw capture text → structured parcel.
@@ -11,12 +12,19 @@ import 'parse_rule.dart';
 class RuleEngine {
   final RuleSet ruleSet;
 
+  /// Ad/phishing gate applied to every capture before extraction, so all
+  /// callers (notification sync, replay, tests) share one enforcement point.
+  final CaptureScreener screener;
+
   /// Active courier list (built-ins ∪ user-added, per Settings > 로컬).
   /// Defaults to the bundled built-ins when not supplied (e.g. in tests).
   final List<Courier> couriers;
 
-  RuleEngine(this.ruleSet, {List<Courier>? couriers})
-    : couriers = couriers ?? Couriers.all;
+  RuleEngine(
+    this.ruleSet, {
+    List<Courier>? couriers,
+    this.screener = const CaptureScreener(),
+  }) : couriers = couriers ?? Couriers.all;
 
   late final Map<String, Courier> _courierByCode = {
     for (final c in couriers) c.code: c,
@@ -68,6 +76,14 @@ class RuleEngine {
   static final _coupangOrderRe = RegExp(r'주문번호\s*[:：]?\s*(\d{6,20})');
 
   ParseResult parse(RawCapture capture) {
+    final verdict = screener.screen(capture);
+    if (verdict != null) {
+      return ParseResult.rejected(
+        verdict.reason,
+        screeningNote: verdict.signal,
+      );
+    }
+
     final text = capture.fullText;
     ParseRejectReason? lastReason;
 

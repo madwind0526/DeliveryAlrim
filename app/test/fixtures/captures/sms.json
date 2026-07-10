@@ -83,7 +83,7 @@
   },
   {
     "id": "sms_coupang_ad_negative",
-    "note": "Negative: Coupang ad mentioning 쿠팡 but no delivery event",
+    "note": "Negative: Coupang ad; caught by the ad screener before rule matching",
     "channel": "sms",
     "sender": "080123456",
     "title": null,
@@ -91,7 +91,7 @@
     "capturedAt": "2026-07-04T11:00:00",
     "expected": {
       "matched": false,
-      "reason": "noRuleMatched"
+      "reason": "adFiltered"
     }
   }
 ]

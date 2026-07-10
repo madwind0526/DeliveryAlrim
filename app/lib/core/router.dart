@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../features/calendar/calendar_screen.dart';
+import '../features/capture/quarantine_screen.dart';
 import '../features/debug/replay_screen.dart';
 import '../features/daily/today_dashboard_screen.dart';
 import '../features/preferences/filter_screen.dart';
@@ -74,6 +75,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/parcels/new',
         builder: (_, _) => const ManualInsertScreen(),
+      ),
+      GoRoute(
+        path: '/quarantine',
+        builder: (_, _) => const QuarantineScreen(),
       ),
       GoRoute(path: '/debug/replay', builder: (_, _) => const ReplayScreen()),
     ],

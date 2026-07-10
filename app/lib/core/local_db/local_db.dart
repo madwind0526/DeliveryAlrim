@@ -38,6 +38,19 @@ class TrackingEventRows extends Table {
   TextColumn get description => text().nullable()();
 }
 
+/// Captures screened out as suspected phishing, kept for user review.
+/// Never auto-deleted: a false positive must stay recoverable. The body
+/// is rendered as plain, non-clickable text only.
+class QuarantineRows extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get channel => text()();
+  TextColumn get sender => text().nullable()();
+  TextColumn get title => text().nullable()();
+  TextColumn get body => text()();
+  TextColumn get reason => text()();
+  DateTimeColumn get capturedAt => dateTime()();
+}
+
 /// Legacy single-row local profile table from the early PC-mode prototype.
 /// Kept for schema compatibility; the app no longer uses login/profile state.
 class LocalProfileRows extends Table {
@@ -49,7 +62,9 @@ class LocalProfileRows extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-@DriftDatabase(tables: [ParcelRows, LocalProfileRows, TrackingEventRows])
+@DriftDatabase(
+  tables: [ParcelRows, LocalProfileRows, TrackingEventRows, QuarantineRows],
+)
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
@@ -57,13 +72,16 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.connection);
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onUpgrade: (m, from, to) async {
       if (from < 2) {
         await m.createTable(trackingEventRows);
+      }
+      if (from < 3) {
+        await m.createTable(quarantineRows);
       }
     },
   );

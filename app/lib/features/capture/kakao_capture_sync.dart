@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers.dart';
 import '../../core/secure_credentials.dart';
 import 'capture_models.dart';
+import 'quarantine_store.dart';
 import 'rules_provider.dart';
 import 'kakao_capture_bridge.dart';
 
@@ -37,6 +38,15 @@ class KakaoCaptureSync {
       if (!await _sourceEnabled(capture)) continue;
 
       final result = engine.parse(capture);
+      if (result.reason == ParseRejectReason.suspectedPhishing) {
+        await _ref
+            .read(quarantineStoreProvider)
+            .add(
+              capture,
+              reason: result.screeningNote ?? ParseRejectReason.suspectedPhishing.labelKo,
+            );
+        continue;
+      }
       if (!result.matched) continue;
 
       await _ref
