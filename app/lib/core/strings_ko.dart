@@ -37,6 +37,8 @@ abstract final class StringsKo {
   static const dailyTitle = '일별 배송';
   static const monthlyTitle = '월별 배송';
   static const dayEmpty = '이 날짜의 배송이 없습니다';
+  static const calendarFormatMonth = '월';
+  static const calendarFormatWeek = '주';
   static const todaySummaryTitle = '오늘 배송 현황';
   static const todayOrdered = '주문 내역';
   static const todayInTransit = '배송 내역';
@@ -134,6 +136,50 @@ abstract final class StringsKo {
   static const registerParcelButton = '배송으로 등록';
   static const registeredSnack = '배송 목록에 등록되었습니다';
   static const rulesLoadError = '파싱 규칙을 불러오지 못했습니다';
+
+  // Sweet Tracker query API (optional feature)
+  static const trackingApiSection = '스마트택배 조회 API (선택)';
+  static const trackingApiHint =
+      '스마트택배(스윗트래커) API 키를 등록하면 배송 상세와 목록에서 수동 조회를 사용할 수 있습니다. '
+      '키가 없어도 알림 기반 추적은 그대로 동작합니다. 무료 키는 하루 약 100건까지만 조회됩니다.';
+  static const trackingApiKeyInputHint = 'API 키 입력';
+  static const trackingApiKeySaved = 'API 키를 암호화 저장했습니다';
+  static const trackingApiKeyDeleted = 'API 키를 삭제했습니다';
+  static const trackingApiKeyRegistered = 'API 키 등록됨';
+  static const trackingApiKeyMissing = 'API 키 미등록';
+  static const trackingApiUsageToday = '오늘 사용량';
+  static const trackingRefresh = '배송 조회';
+  static const trackingRefreshAll = '전체 배송 조회';
+  static const trackingRefreshUpdated = '배송 상태를 갱신했습니다';
+  static const trackingRefreshNoChange = '변동 없음 — 이미 최신 상태입니다';
+  static const trackingRefreshUnsupported = '이 택배사는 API 조회를 지원하지 않습니다';
+  static const trackingRefreshAlreadyDone = '이미 완료된 배송입니다';
+  static const trackingRefreshMissingKey = 'API 키가 없습니다. 설정에서 등록해 주세요';
+  static const trackingQuotaExceeded = '오늘 조회 한도를 모두 사용했습니다';
+  static const trackingRefreshFailed = '조회 실패';
+  static const trackingQuotaReached = '오늘 조회 한도 도달';
+
+  static String trackingRefreshSummary({
+    required int updated,
+    required int unchanged,
+    required int failed,
+  }) {
+    return [
+      '갱신 $updated건',
+      '변동 없음 $unchanged건',
+      if (failed > 0) '실패 $failed건',
+    ].join(' · ');
+  }
+
+  // Phishing quarantine
+  static const quarantineTitle = '피싱 의심 보관함';
+  static const quarantineEmpty = '피싱 의심 메시지가 없습니다';
+  static const quarantineWarning =
+      '피싱이 의심되어 배송으로 등록하지 않은 메시지입니다. 본문 속 링크나 첨부를 절대 열지 마세요.';
+  static const quarantineReasonLabel = '의심 사유';
+  static const quarantineDelete = '삭제';
+  static const quarantineDeleted = '삭제했습니다';
+  static const quarantineSettingHint = '피싱으로 의심되는 메시지는 배송 목록 대신 여기 보관됩니다';
 
   // Manual insert
   static const manualInsertTitle = '배송 수동 등록';

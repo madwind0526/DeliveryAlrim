@@ -9,24 +9,36 @@ import '../../core/providers.dart';
 import '../../core/strings_ko.dart';
 import '../parcels/models/parcel.dart';
 import '../parcels/widgets/parcel_status_badge.dart';
+import 'parcel_day_index.dart';
 
-/// Day (date-only) → parcels arriving or delivered that day.
-/// Done parcels count on deliveredAt; active ones on expectedArrivalDate
-/// when known, falling back to registeredAt so an in-transit parcel with
-/// no arrival estimate yet still shows up somewhere instead of vanishing.
-final parcelsByDayProvider = Provider<AsyncValue<Map<DateTime, List<Parcel>>>>((
-  ref,
-) {
-  return ref.watch(allParcelsProvider).whenData((parcels) {
-    final map = <DateTime, List<Parcel>>{};
-    for (final p in parcels) {
-      final date = p.deliveredAt ?? p.expectedArrivalDate ?? p.registeredAt;
-      final day = DateTime(date.year, date.month, date.day);
-      (map[day] ??= []).add(p);
-    }
-    return map;
-  });
-});
+/// Day (date-only) → parcels visible that day with their as-of-that-day
+/// status, reconstructed from the tracking-event log. Active parcels carry
+/// forward every day until they finish, and past days keep the status they
+/// had back then (see buildParcelDayIndex).
+final parcelsByDayProvider =
+    Provider<AsyncValue<Map<DateTime, List<DayParcelEntry>>>>((ref) {
+      final parcelsAsync = ref.watch(allParcelsProvider);
+      final eventsAsync = ref.watch(allTrackingEventsProvider);
+      return switch ((parcelsAsync, eventsAsync)) {
+        (AsyncData(value: final parcels), AsyncData(value: final events)) =>
+          AsyncValue.data(
+            buildParcelDayIndex(
+              parcels: parcels,
+              events: events,
+              today: DateTime.now(),
+            ),
+          ),
+        (AsyncError(:final error, :final stackTrace), _) => AsyncValue.error(
+          error,
+          stackTrace,
+        ),
+        (_, AsyncError(:final error, :final stackTrace)) => AsyncValue.error(
+          error,
+          stackTrace,
+        ),
+        _ => const AsyncValue.loading(),
+      };
+    });
 
 class CalendarScreen extends ConsumerStatefulWidget {
   final CalendarFormat initialFormat;
@@ -58,16 +70,49 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
-        actions: const [AppBackgroundButton()],
+        actions: [
+          // Explicit month/week toggle instead of table_calendar's
+          // cycling format button.
+          Padding(
+            padding: const EdgeInsets.only(right: 4),
+            child: SegmentedButton<CalendarFormat>(
+              segments: const [
+                ButtonSegment(
+                  value: CalendarFormat.month,
+                  label: Text(StringsKo.calendarFormatMonth),
+                ),
+                ButtonSegment(
+                  value: CalendarFormat.week,
+                  label: Text(StringsKo.calendarFormatWeek),
+                ),
+              ],
+              selected: {
+                _format == CalendarFormat.week
+                    ? CalendarFormat.week
+                    : CalendarFormat.month,
+              },
+              onSelectionChanged: (value) => setState(() {
+                _format = value.single;
+              }),
+              showSelectedIcon: false,
+              style: const ButtonStyle(
+                visualDensity: VisualDensity.compact,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+            ),
+          ),
+          const AppBackgroundButton(),
+        ],
       ),
       body: byDayAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('$e')),
         data: (byDay) {
-          final selected = byDay[_dateOnly(_selectedDay)] ?? const <Parcel>[];
+          final selected =
+              byDay[_dateOnly(_selectedDay)] ?? const <DayParcelEntry>[];
           return Column(
             children: [
-              TableCalendar<Parcel>(
+              TableCalendar<DayParcelEntry>(
                 locale: 'ko',
                 firstDay: DateTime.now().subtract(const Duration(days: 365)),
                 lastDay: DateTime.now().add(const Duration(days: 90)),
@@ -77,11 +122,13 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                 eventLoader: (day) => byDay[_dateOnly(day)] ?? const [],
                 startingDayOfWeek: StartingDayOfWeek.sunday,
                 availableCalendarFormats: const {
-                  CalendarFormat.month: '월',
-                  CalendarFormat.week: '주',
-                  CalendarFormat.twoWeeks: '2주',
+                  CalendarFormat.month: StringsKo.calendarFormatMonth,
+                  CalendarFormat.week: StringsKo.calendarFormatWeek,
                 },
-                headerStyle: const HeaderStyle(titleCentered: true),
+                headerStyle: const HeaderStyle(
+                  titleCentered: true,
+                  formatButtonVisible: false,
+                ),
                 calendarStyle: CalendarStyle(
                   markerDecoration: BoxDecoration(
                     color: Theme.of(context).colorScheme.primary,
@@ -117,7 +164,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                         padding: const EdgeInsets.symmetric(vertical: 8),
                         itemCount: selected.length,
                         itemBuilder: (context, i) =>
-                            _DayParcelTile(parcel: selected[i]),
+                            _DayParcelTile(entry: selected[i]),
                       ),
               ),
             ],
@@ -129,17 +176,28 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 }
 
 class _DayParcelTile extends StatelessWidget {
-  final Parcel parcel;
+  final DayParcelEntry entry;
 
-  const _DayParcelTile({required this.parcel});
+  const _DayParcelTile({required this.entry});
 
   @override
   Widget build(BuildContext context) {
+    final parcel = entry.parcel;
     final courierName =
         Couriers.byCode(parcel.courierCode)?.nameKo ?? parcel.courierCode;
-    final badge = parcel.deliveredAt != null
-        ? StringsKo.deliveredBadge
-        : StringsKo.expectedBadge;
+
+    // Day-specific annotation: delivered that day, or that day is the
+    // expected arrival date of a parcel still in flight.
+    final expected = parcel.expectedArrivalDate;
+    final String? badge;
+    if (entry.statusOnDay == ParcelStatus.delivered) {
+      badge = StringsKo.deliveredBadge;
+    } else if (entry.isExpectedPreview ||
+        (expected != null && isSameDay(expected, entry.day))) {
+      badge = StringsKo.expectedBadge;
+    } else {
+      badge = null;
+    }
 
     return Card(
       child: ListTile(
@@ -148,8 +206,8 @@ class _DayParcelTile extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
-        subtitle: Text('$courierName · $badge'),
-        trailing: ParcelStatusBadge(status: parcel.status),
+        subtitle: Text(badge == null ? courierName : '$courierName · $badge'),
+        trailing: ParcelStatusBadge(status: entry.statusOnDay),
         onTap: () => context.push('/parcel/${parcel.id}'),
       ),
     );

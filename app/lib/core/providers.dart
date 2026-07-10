@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../features/parcels/models/parcel.dart';
+import '../features/parcels/models/tracking_event.dart';
 import '../features/parcels/parcel_repository.dart';
 import 'local_db/local_db.dart';
 
@@ -25,4 +26,8 @@ final doneParcelsProvider = StreamProvider<List<Parcel>>(
 
 final allParcelsProvider = StreamProvider<List<Parcel>>(
   (ref) => ref.watch(parcelRepositoryProvider).watchAll(),
+);
+
+final allTrackingEventsProvider = StreamProvider<List<TrackingEvent>>(
+  (ref) => ref.watch(parcelRepositoryProvider).watchAllEvents(),
 );

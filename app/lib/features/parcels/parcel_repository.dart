@@ -13,6 +13,10 @@ abstract interface class ParcelRepository {
   Stream<Parcel?> watchById(String id);
   Stream<List<TrackingEvent>> watchEvents(String parcelId);
 
+  /// All tracking events across parcels, oldest first. Used to
+  /// reconstruct per-day status snapshots for the calendar.
+  Stream<List<TrackingEvent>> watchAllEvents();
+
   /// Insert a newly captured parcel, or merge it into the existing row
   /// with the same (courierCode, trackingNumber) — see [Parcel.merge].
   /// Records a timeline event on first registration and on every
@@ -66,20 +70,24 @@ class LocalParcelRepository implements ParcelRepository {
     final query = _db.select(_db.trackingEventRows)
       ..where((t) => t.parcelId.equals(parcelId))
       ..orderBy([(t) => OrderingTerm.desc(t.eventTime)]);
-    return query.watch().map(
-      (rows) => [
-        for (final r in rows)
-          TrackingEvent(
-            id: r.id,
-            parcelId: r.parcelId,
-            eventTime: r.eventTime,
-            status: ParcelStatus.fromCode(r.statusCode),
-            location: r.location,
-            description: r.description,
-          ),
-      ],
-    );
+    return query.watch().map((rows) => rows.map(_toEvent).toList());
   }
+
+  @override
+  Stream<List<TrackingEvent>> watchAllEvents() {
+    final query = _db.select(_db.trackingEventRows)
+      ..orderBy([(t) => OrderingTerm.asc(t.eventTime)]);
+    return query.watch().map((rows) => rows.map(_toEvent).toList());
+  }
+
+  TrackingEvent _toEvent(TrackingEventRow r) => TrackingEvent(
+    id: r.id,
+    parcelId: r.parcelId,
+    eventTime: r.eventTime,
+    status: ParcelStatus.fromCode(r.statusCode),
+    location: r.location,
+    description: r.description,
+  );
 
   @override
   Future<void> upsert(Parcel parcel, {String? eventNote}) async {
