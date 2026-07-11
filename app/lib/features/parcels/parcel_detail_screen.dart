@@ -124,10 +124,15 @@ class _RefreshActionState extends ConsumerState<_RefreshAction> {
 
   Future<void> _refresh() async {
     if (_busy) return;
-    final parcel = ref.read(_parcelByIdProvider(widget.parcelId)).value;
-    if (parcel == null) return;
-    setState(() => _busy = true);
     final messenger = ScaffoldMessenger.of(context);
+    final parcel = ref.read(_parcelByIdProvider(widget.parcelId)).value;
+    if (parcel == null) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text(StringsKo.trackingRefreshNotReady)),
+      );
+      return;
+    }
+    setState(() => _busy = true);
     try {
       final result = await ref
           .read(trackingRefreshServiceProvider)

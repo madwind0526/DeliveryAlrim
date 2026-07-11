@@ -155,6 +155,7 @@ abstract final class StringsKo {
   static const trackingRefreshUnsupported = '이 택배사는 API 조회를 지원하지 않습니다';
   static const trackingRefreshAlreadyDone = '이미 완료된 배송입니다';
   static const trackingRefreshMissingKey = 'API 키가 없습니다. 설정에서 등록해 주세요';
+  static const trackingRefreshNotReady = '아직 정보를 불러오는 중입니다. 잠시 후 다시 시도해 주세요';
   static const trackingQuotaExceeded = '오늘 조회 한도를 모두 사용했습니다';
   static const trackingRefreshFailed = '조회 실패';
   static const trackingQuotaReached = '오늘 조회 한도 도달';
