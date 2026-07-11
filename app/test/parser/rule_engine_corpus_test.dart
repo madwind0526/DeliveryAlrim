@@ -194,4 +194,36 @@ void main() {
       expect(result.parcel!.trackingNumber, '512345678901');
     },
   );
+
+  test(
+    'card order: same issuer/amount/time-of-day in a different year is a '
+    'different purchase, not a dedupe collision',
+    () {
+      final thisYear = engine.parse(
+        RawCapture(
+          channel: CaptureChannel.sms,
+          sender: '신한카드',
+          title: '신한카드',
+          body: '신한카드 승인 정*민(1234)\n23,500원 일시불\n07/12 18:20 이마트24',
+          capturedAt: DateTime(2026, 7, 12, 18, 20),
+        ),
+      );
+      final nextYear = engine.parse(
+        RawCapture(
+          channel: CaptureChannel.sms,
+          sender: '신한카드',
+          title: '신한카드',
+          body: '신한카드 승인 정*민(1234)\n23,500원 일시불\n07/12 18:20 이마트24',
+          capturedAt: DateTime(2027, 7, 12, 18, 20),
+        ),
+      );
+
+      expect(thisYear.matched, isTrue);
+      expect(nextYear.matched, isTrue);
+      expect(
+        thisYear.parcel!.trackingNumber,
+        isNot(nextYear.parcel!.trackingNumber),
+      );
+    },
+  );
 }

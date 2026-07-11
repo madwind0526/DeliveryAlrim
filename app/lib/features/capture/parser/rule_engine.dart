@@ -230,8 +230,11 @@ class RuleEngine {
         (capture.title ?? capture.sender)?.trim() ??
         _cardBracketIssuerRe.firstMatch(text)?.group(1);
 
+    // The message text itself only ever carries MM/DD HH:MM (no year), so
+    // a recurring charge at the same time-of-day would hash to the same
+    // key a year later without capture.capturedAt.year in the seed.
     final seed = datetime != null
-        ? '${issuer ?? ''}|${amount ?? ''}|$datetime'
+        ? '${issuer ?? ''}|${amount ?? ''}|${capture.capturedAt.year}|$datetime'
         : '${issuer ?? ''}|${_collapseWhitespace(text)}';
     final key = _syntheticKey('card', seed);
 
