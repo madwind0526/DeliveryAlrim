@@ -20,11 +20,14 @@ class KakaoCaptureSync {
 
   KakaoCaptureSync(this._ref);
 
-  /// Returns how many captures were newly registered or advanced an
-  /// existing parcel's status — 0 means nothing changed. Callers that only
-  /// care whether anything happened can check `> 0`; the headless
-  /// background-sync path uses the exact count for the new-activity
-  /// notification badge.
+  /// Returns how many captures were newly registered, advanced an existing
+  /// parcel's status, or were quarantined as suspected phishing — 0 means
+  /// nothing happened this sync. Callers that only care whether anything
+  /// happened can check `> 0`; the headless background-sync path uses the
+  /// exact count for the new-activity notification badge. A failure
+  /// processing one capture (e.g. a local DB write error) is caught so it
+  /// can't abort the rest of the batch or leave [bridge.clearPendingCaptures]
+  /// unreached.
   Future<int> syncLatest({bool rescanActiveNotifications = false}) async {
     final bridge = _ref.read(kakaoCaptureBridgeProvider);
     if (rescanActiveNotifications) {
@@ -39,28 +42,36 @@ class KakaoCaptureSync {
     var changedCount = 0;
     for (final snapshot in snapshots) {
       if (!snapshot.isUsable) continue;
-      final capture = snapshot.toCapture();
-      if (!await _sourceEnabled(capture)) continue;
+      try {
+        final capture = snapshot.toCapture();
+        if (!await _sourceEnabled(capture)) continue;
 
-      final result = engine.parse(capture);
-      if (result.reason == ParseRejectReason.suspectedPhishing) {
-        await _ref
-            .read(quarantineStoreProvider)
-            .add(
-              capture,
-              reason: result.screeningNote ?? ParseRejectReason.suspectedPhishing.labelKo,
+        final result = engine.parse(capture);
+        if (result.reason == ParseRejectReason.suspectedPhishing) {
+          await _ref
+              .read(quarantineStoreProvider)
+              .add(
+                capture,
+                reason:
+                    result.screeningNote ??
+                    ParseRejectReason.suspectedPhishing.labelKo,
+              );
+          changedCount++;
+          continue;
+        }
+        if (!result.matched) continue;
+
+        final changed = await _ref
+            .read(parcelRepositoryProvider)
+            .upsert(
+              result.parcel!.toParcel(capture),
+              eventNote: _eventNote(capture),
             );
-        continue;
+        if (changed) changedCount++;
+      } catch (_) {
+        // One bad capture (e.g. a local DB write failure) must not stop
+        // the rest of the batch from being processed and cleared.
       }
-      if (!result.matched) continue;
-
-      final changed = await _ref
-          .read(parcelRepositoryProvider)
-          .upsert(
-            result.parcel!.toParcel(capture),
-            eventNote: _eventNote(capture),
-          );
-      if (changed) changedCount++;
     }
 
     await bridge.clearPendingCaptures();
