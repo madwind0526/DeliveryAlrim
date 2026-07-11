@@ -34,9 +34,21 @@ void backgroundCaptureSync() {
 Future<void> _run() async {
   final container = ProviderContainer();
   try {
-    await container
+    final changed = await container
         .read(kakaoCaptureSyncProvider)
         .syncLatest(rescanActiveNotifications: true);
+    // Only badge for activity found while the user wasn't looking — this
+    // entrypoint only ever runs headless (see BackgroundCaptureSync.kt),
+    // so any change here happened without the user seeing it live.
+    if (changed > 0) {
+      try {
+        await _captureChannel.invokeMethod('notifyNewCaptures', {
+          'count': changed,
+        });
+      } on Exception {
+        // Non-fatal: the parcel is still saved, just no badge this time.
+      }
+    }
   } catch (_) {
     // Best-effort: anything left unsynced stays queued for the next
     // attempt (app resume or the next triggered background run).

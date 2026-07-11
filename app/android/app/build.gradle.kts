@@ -41,6 +41,12 @@ kotlin {
     }
 }
 
+dependencies {
+    // NotificationCompat/NotificationManagerCompat for the new-capture
+    // badge notification (CaptureNotifier.kt).
+    implementation("androidx.core:core-ktx:1.13.1")
+}
+
 flutter {
     source = "../.."
 }

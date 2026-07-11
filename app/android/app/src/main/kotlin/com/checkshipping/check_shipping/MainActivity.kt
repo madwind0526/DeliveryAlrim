@@ -1,11 +1,14 @@
 package com.checkshipping.check_shipping
 
+import android.Manifest
 import android.content.ComponentName
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.window.OnBackInvokedDispatcher
+import androidx.core.app.ActivityCompat
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -22,12 +25,24 @@ class MainActivity : FlutterActivity() {
             ) {
                 requestGoHome()
             }
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) !=
+                PackageManager.PERMISSION_GRANTED
+            ) {
+                ActivityCompat.requestPermissions(
+                    this,
+                    arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                    POST_NOTIFICATIONS_REQUEST_CODE,
+                )
+            }
         }
     }
 
     override fun onResume() {
         super.onResume()
         isInForeground = true
+        // The user is looking at the app now — clear the new-capture
+        // badge/notification rather than leaving it stale.
+        CaptureNotifier.clearUnseen(this)
     }
 
     override fun onPause() {
@@ -155,5 +170,6 @@ class MainActivity : FlutterActivity() {
 
         private const val SETTINGS_CHANNEL = "check_shipping/system_settings"
         private const val APP_CONTROL_CHANNEL = "check_shipping/app_control"
+        private const val POST_NOTIFICATIONS_REQUEST_CODE = 1
     }
 }

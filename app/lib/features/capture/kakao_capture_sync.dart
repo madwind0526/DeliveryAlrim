@@ -20,7 +20,12 @@ class KakaoCaptureSync {
 
   KakaoCaptureSync(this._ref);
 
-  Future<bool> syncLatest({bool rescanActiveNotifications = false}) async {
+  /// Returns how many captures were newly registered or advanced an
+  /// existing parcel's status — 0 means nothing changed. Callers that only
+  /// care whether anything happened can check `> 0`; the headless
+  /// background-sync path uses the exact count for the new-activity
+  /// notification badge.
+  Future<int> syncLatest({bool rescanActiveNotifications = false}) async {
     final bridge = _ref.read(kakaoCaptureBridgeProvider);
     if (rescanActiveNotifications) {
       await bridge.scanActiveNotifications();
@@ -28,10 +33,10 @@ class KakaoCaptureSync {
     final pending = await bridge.getPendingCaptures();
     final latest = pending.isEmpty ? await bridge.getLatestCapture() : null;
     final snapshots = pending.isNotEmpty ? pending : [?latest];
-    if (snapshots.isEmpty) return false;
+    if (snapshots.isEmpty) return 0;
 
     final engine = await _ref.read(ruleEngineProvider.future);
-    var synced = false;
+    var changedCount = 0;
     for (final snapshot in snapshots) {
       if (!snapshot.isUsable) continue;
       final capture = snapshot.toCapture();
@@ -49,17 +54,17 @@ class KakaoCaptureSync {
       }
       if (!result.matched) continue;
 
-      await _ref
+      final changed = await _ref
           .read(parcelRepositoryProvider)
           .upsert(
             result.parcel!.toParcel(capture),
             eventNote: _eventNote(capture),
           );
-      synced = true;
+      if (changed) changedCount++;
     }
 
     await bridge.clearPendingCaptures();
-    return synced;
+    return changedCount;
   }
 
   Future<bool> _sourceEnabled(RawCapture capture) {

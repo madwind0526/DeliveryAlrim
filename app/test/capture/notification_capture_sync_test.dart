@@ -42,7 +42,7 @@ void main() {
           .read(kakaoCaptureSyncProvider)
           .syncLatest();
 
-      expect(synced, isTrue);
+      expect(synced, 2);
       expect(bridge.cleared, isTrue);
 
       final parcels = await container

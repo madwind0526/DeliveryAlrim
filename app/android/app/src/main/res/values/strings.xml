@@ -3,4 +3,7 @@
     <string name="notification_listener_service_label">배송알리미 알림 수집</string>
     <string name="kakao_accessibility_service_label">배송알리미 카카오톡 수집</string>
     <string name="kakao_accessibility_service_description">카카오톡 알림톡 화면에서 배송 정보를 수집합니다.</string>
+    <string name="new_capture_channel_name">새 배송·주문 알림</string>
+    <string name="new_capture_notification_title">새 배송·주문 소식</string>
+    <string name="new_capture_notification_body">%1$d건의 새로운 소식이 있어요</string>
 </resources>

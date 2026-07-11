@@ -21,7 +21,10 @@ abstract interface class ParcelRepository {
   /// with the same (courierCode, trackingNumber) — see [Parcel.merge].
   /// Records a timeline event on first registration and on every
   /// status advance; [eventNote] describes the trigger (e.g. channel).
-  Future<void> upsert(Parcel parcel, {String? eventNote});
+  /// Returns true when this was a new row or advanced the status —
+  /// callers use this to decide whether the change is worth surfacing
+  /// (e.g. the new-capture notification badge).
+  Future<bool> upsert(Parcel parcel, {String? eventNote});
 
   Future<void> delete(String id);
 }
@@ -90,8 +93,8 @@ class LocalParcelRepository implements ParcelRepository {
   );
 
   @override
-  Future<void> upsert(Parcel parcel, {String? eventNote}) async {
-    await _db.transaction(() async {
+  Future<bool> upsert(Parcel parcel, {String? eventNote}) async {
+    return await _db.transaction(() async {
       final existing =
           await (_db.select(_db.parcelRows)..where(
                 (t) =>
@@ -125,6 +128,7 @@ class LocalParcelRepository implements ParcelRepository {
               ),
             );
       }
+      return statusChanged;
     });
   }
 

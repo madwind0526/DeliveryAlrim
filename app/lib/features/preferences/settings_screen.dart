@@ -104,12 +104,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
     setState(() => _syncingKakao = true);
     final messenger = ScaffoldMessenger.of(context);
     try {
-      final synced = await ref.read(kakaoCaptureSyncProvider).syncLatest();
+      final changed = await ref.read(kakaoCaptureSyncProvider).syncLatest();
       if (!mounted) return;
       messenger.showSnackBar(
         SnackBar(
           content: Text(
-            synced ? StringsKo.userKakaoSyncDone : StringsKo.userKakaoSyncEmpty,
+            changed > 0
+                ? StringsKo.userKakaoSyncDone
+                : StringsKo.userKakaoSyncEmpty,
           ),
         ),
       );
@@ -128,14 +130,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
     setState(() => _rescanningNotifications = true);
     final messenger = ScaffoldMessenger.of(context);
     try {
-      final synced = await ref
+      final changed = await ref
           .read(kakaoCaptureSyncProvider)
           .syncLatest(rescanActiveNotifications: true);
       if (!mounted) return;
       messenger.showSnackBar(
         SnackBar(
           content: Text(
-            synced ? StringsKo.userKakaoSyncDone : StringsKo.userKakaoSyncEmpty,
+            changed > 0
+                ? StringsKo.userKakaoSyncDone
+                : StringsKo.userKakaoSyncEmpty,
           ),
         ),
       );

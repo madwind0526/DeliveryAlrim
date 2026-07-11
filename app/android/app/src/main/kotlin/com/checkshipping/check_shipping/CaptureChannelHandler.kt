@@ -34,6 +34,11 @@ object CaptureChannelHandler {
                     clearCaptures(appContext)
                     result.success(null)
                 }
+                "notifyNewCaptures" -> {
+                    val count = (call.argument<Int>("count")) ?: 0
+                    CaptureNotifier.addUnseen(appContext, count)
+                    result.success(null)
+                }
                 "backgroundSyncDone" -> {
                     onBackgroundSyncDone?.invoke()
                     result.success(null)
