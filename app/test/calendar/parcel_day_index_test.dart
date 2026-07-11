@@ -232,5 +232,50 @@ void main() {
         expect(index[day11]!.any((e) => e.parcel.id == 'order1'), isTrue);
       },
     );
+
+    test(
+      'order and shipment registered the same day both show today; only the shipment survives tomorrow',
+      () {
+        final order = _parcel(
+          id: 'order1',
+          courierCode: 'card_order',
+          trackingNumber: 'card:abc',
+          status: ParcelStatus.registered,
+          registeredAt: DateTime(2026, 7, 7, 9), // ordered this morning
+          mallName: '삼성카드',
+          productName: '9,831원 결제 · TeslaMotors',
+        );
+        final shipment = _parcel(
+          id: 'shipment1',
+          courierCode: 'cj',
+          trackingNumber: '999888777',
+          status: ParcelStatus.outForDelivery,
+          registeredAt: DateTime(2026, 7, 7, 14), // ships out same afternoon
+          mallName: 'TeslaMotors',
+          productName: 'TeslaMotors 액세서리',
+        );
+
+        // Same-day snapshot: both the order and the shipment are visible.
+        final today = buildParcelDayIndex(
+          parcels: [order, shipment],
+          events: const [],
+          today: DateTime(2026, 7, 7, 20),
+        );
+        expect(today[day7]!.any((e) => e.parcel.id == 'order1'), isTrue);
+        expect(today[day7]!.any((e) => e.parcel.id == 'shipment1'), isTrue);
+
+        // A day later: the order placeholder is gone, the shipment carries
+        // forward on its own as usual.
+        final tomorrow = buildParcelDayIndex(
+          parcels: [order, shipment],
+          events: const [],
+          today: DateTime(2026, 7, 8, 9),
+        );
+        expect(tomorrow[day8]!.any((e) => e.parcel.id == 'order1'), isFalse);
+        expect(tomorrow[day8]!.any((e) => e.parcel.id == 'shipment1'), isTrue);
+        // Yesterday's snapshot is untouched either way.
+        expect(tomorrow[day7]!.any((e) => e.parcel.id == 'order1'), isTrue);
+      },
+    );
   });
 }
