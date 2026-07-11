@@ -98,6 +98,9 @@ class RuleEngine {
       if (rule.courierCode == Couriers.cardOrder.code) {
         return ParseResult.success(_extractCardOrder(capture, text, match, rule));
       }
+      if (rule.courierCode == Couriers.mallOrder.code) {
+        return ParseResult.success(_extractMallOrder(capture, text, match, rule));
+      }
 
       final invoiceRaw = _namedOrNull(match, 'invoice');
       if (invoiceRaw == null) continue;
@@ -231,6 +234,37 @@ class RuleEngine {
       status: ParcelStatus.registered,
       productName: amount != null ? '$amount원 결제' : null,
       mallName: issuer,
+      matchedRuleId: rule.id,
+    );
+  }
+
+  /// Mall order-confirmation alimtalk/SMS/email ("[OO몰] 주문 완료 안내"
+  /// with a 주문번호 and 결제금액, but nothing shipping-related yet) —
+  /// same idea as [_extractCardOrder]: register the order now so it isn't
+  /// lost, and let the real shipment register separately later under its
+  /// own courier once a courier notification actually arrives.
+  ExtractedParcel _extractMallOrder(
+    RawCapture capture,
+    String text,
+    RegExpMatch match,
+    ParseRule rule,
+  ) {
+    final orderNo = _namedOrNull(match, 'orderNo');
+    final amount = _namedOrNull(match, 'amount');
+    final mallName = _namedOrNull(match, 'mall');
+
+    final seed = orderNo != null
+        ? 'order:$orderNo'
+        : '${mallName ?? ''}|${text.replaceAll(RegExp(r'\s+'), ' ').trim()}';
+    final key = 'mall:${sha1.convert(utf8.encode(seed))}';
+
+    return ExtractedParcel(
+      courierCode: Couriers.mallOrder.code,
+      trackingNumber: key,
+      status: ParcelStatus.registered,
+      productName: _extractProduct(rule, text) ??
+          (amount != null ? '$amount원 결제' : null),
+      mallName: mallName,
       matchedRuleId: rule.id,
     );
   }

@@ -1,15 +1,19 @@
 [
   {
     "id": "kakao_welfare_order_complete_real",
-    "note": "Real sample: order-complete message WITHOUT tracking number → must be rejected",
+    "note": "Real sample: order-complete message with no tracking number yet → registers as a mall order, not a shipment",
     "channel": "kakao",
     "packageName": "com.kakao.talk",
     "title": "복지포탈",
     "body": "[복지포탈] 주문 완료 안내\n\n신*종님, 아래 상품 주문이 완료됐어요.\n\n■ 주문내용 \n- 상품명 : [김희선 PICK] BNR17 다이어트 유산균 모유유래   체지방감소 비에날씬프로 6개월+프로틴 14포 증정+보냉백 증정 외\n- 주문번호 : BA260702210729198\n- 결제금액(결제포인트) : 328,830원(328,830 P)\n- 주문일 : 2026.07.02\n\n■ 자세히보기\nhttps://sec.s-bluevery.com/mypage/PFLBCL14C003.do?ordrNo=BA260702210729198\n\n복지포탈 고객상담 1666-0829\n(평일 09:00~20:00, 토/일/공휴일 09:00~18:00 운영)",
     "capturedAt": "2026-07-02T21:10:00",
     "expected": {
-      "matched": false,
-      "reason": "noRuleMatched"
+      "matched": true,
+      "courierCode": "mall_order",
+      "trackingNumberPrefix": "mall:",
+      "status": "registered",
+      "productName": "[김희선 PICK] BNR17 다이어트 유산균 모유유래   체지방감소 비에날씬프로 6개월+프로틴 14포 증정+보냉백 증정 외",
+      "mallName": "복지포탈"
     }
   },
   {

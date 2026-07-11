@@ -50,11 +50,14 @@ class KakaoAccessibilityService : AccessibilityService() {
 
     private fun handleMessage(message: String) {
         val invoice = INVOICE_RE.find(message)?.groupValues?.getOrNull(1)
-        // Card-payment alimtalk (e.g. "[삼성카드] ... 9,831원 ...") has no
-        // invoice number at all — accept it too so RuleEngine's
-        // card_order_bracket_tag rule gets a chance to see it.
+        // Card-payment alimtalk (e.g. "[삼성카드] ... 9,831원 ...") and mall
+        // order-confirmation alimtalk (e.g. "[OO몰] 주문 완료 안내 ...") have
+        // no invoice number at all — accept them too so RuleEngine's
+        // card_order_bracket_tag / mall_order_complete_generic rules get a
+        // chance to see them.
         val isCardOrder = CARD_ORDER_RE.containsMatchIn(message)
-        if (invoice.isNullOrBlank() && !isCardOrder) return
+        val isMallOrder = MALL_ORDER_RE.containsMatchIn(message)
+        if (invoice.isNullOrBlank() && !isCardOrder && !isMallOrder) return
 
         val capturedAtMillis = System.currentTimeMillis()
 
@@ -112,5 +115,6 @@ class KakaoAccessibilityService : AccessibilityService() {
 
         private val INVOICE_RE = Regex("""운송장번호\s*[:：]\s*([0-9\-]{9,20})""")
         private val CARD_ORDER_RE = Regex("""\[[^\]]*카드\][\s\S]{0,80}?\d{1,3}(?:,\d{3})*\s*원""")
+        private val MALL_ORDER_RE = Regex("""\[[^\]]+\][\s\S]{0,30}?주문\s*완료""")
     }
 }
