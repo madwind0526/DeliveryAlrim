@@ -129,11 +129,34 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                   titleCentered: true,
                   formatButtonVisible: false,
                 ),
+                calendarBuilders: CalendarBuilders<DayParcelEntry>(
+                  markerBuilder: (context, day, events) {
+                    if (events.isEmpty) return null;
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 2),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 5,
+                          vertical: 1,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.primary,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          '${events.length}',
+                          style: TextStyle(
+                            fontSize: 10,
+                            height: 1,
+                            fontWeight: FontWeight.w700,
+                            color: Theme.of(context).colorScheme.onPrimary,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
                 calendarStyle: CalendarStyle(
-                  markerDecoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primary,
-                    shape: BoxShape.circle,
-                  ),
                   todayDecoration: BoxDecoration(
                     color: Theme.of(
                       context,
