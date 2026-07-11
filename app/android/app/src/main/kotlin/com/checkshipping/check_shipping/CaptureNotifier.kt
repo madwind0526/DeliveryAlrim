@@ -20,7 +20,6 @@ import androidx.core.app.NotificationManagerCompat
 /// is a throwaway process) and resets when the user actually opens the
 /// app (MainActivity.onResume clears it).
 object CaptureNotifier {
-    private const val PREFS = "kakao_accessibility"
     private const val KEY_UNSEEN_COUNT = "unseen_capture_count"
     private const val CHANNEL_ID = "new_captures"
     private const val NOTIFICATION_ID = 1001
@@ -89,5 +88,5 @@ object CaptureNotifier {
     }
 
     private fun prefs(context: Context): SharedPreferences =
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        context.getSharedPreferences(CapturePrefs.NAME, Context.MODE_PRIVATE)
 }

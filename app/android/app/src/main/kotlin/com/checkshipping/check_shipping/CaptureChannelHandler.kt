@@ -11,8 +11,6 @@ import org.json.JSONObject
 /// share this one implementation.
 object CaptureChannelHandler {
     const val CHANNEL = "check_shipping/kakao_capture"
-    private const val PREFS = "kakao_accessibility"
-    private const val KEY_PENDING_CAPTURES = "pending_captures"
 
     fun register(
         context: Context,
@@ -49,7 +47,7 @@ object CaptureChannelHandler {
     }
 
     private fun readLatestCapture(context: Context): Map<String, Any?>? {
-        val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        val prefs = context.getSharedPreferences(CapturePrefs.NAME, Context.MODE_PRIVATE)
         val body = prefs.getString("last_body", null)
             ?.trim()
             ?.takeIf { it.isNotEmpty() }
@@ -65,9 +63,9 @@ object CaptureChannelHandler {
     }
 
     private fun readPendingCaptures(context: Context): List<Map<String, Any?>> {
-        val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        val prefs = context.getSharedPreferences(CapturePrefs.NAME, Context.MODE_PRIVATE)
         val queue = try {
-            JSONArray(prefs.getString(KEY_PENDING_CAPTURES, "[]"))
+            JSONArray(prefs.getString(CapturePrefs.KEY_PENDING_CAPTURES, "[]"))
         } catch (_: Exception) {
             JSONArray()
         }
@@ -91,9 +89,9 @@ object CaptureChannelHandler {
     }
 
     private fun clearCaptures(context: Context) {
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        context.getSharedPreferences(CapturePrefs.NAME, Context.MODE_PRIVATE)
             .edit()
-            .remove(KEY_PENDING_CAPTURES)
+            .remove(CapturePrefs.KEY_PENDING_CAPTURES)
             .remove("last_channel")
             .remove("last_package")
             .remove("last_title")

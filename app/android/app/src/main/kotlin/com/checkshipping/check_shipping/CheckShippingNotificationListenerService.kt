@@ -55,12 +55,13 @@ class CheckShippingNotificationListenerService : NotificationListenerService() {
         }
         // Card-payment alerts (any issuer) rarely mention shipping words at
         // all, so they'd otherwise get dropped here before RuleEngine's
-        // card_order_generic rule (titleMatch "카드$") ever sees them. Same
-        // story for mall order-confirmation texts ("[OO몰] 주문 완료 안내
-        // ... 주문번호 ... 원") — gate on the same signals RuleEngine uses so
-        // this pre-filter doesn't silently swallow either kind.
+        // card_order_generic rule (a title ending in the card-issuer
+        // suffix) ever sees them. Same story for mall order-confirmation
+        // texts (a bracketed sender tag followed by order-complete
+        // phrasing) — gate on the same signals RuleEngine uses so this
+        // pre-filter doesn't silently swallow either kind.
         val looksLikeCardOrder = title?.trim()?.endsWith("카드") == true
-        val looksLikeMallOrder = MALL_ORDER_HINT.containsMatchIn("$title\n$body")
+        val looksLikeMallOrder = CapturePrefs.MALL_ORDER_RE.containsMatchIn("$title\n$body")
         if (!looksLikeCardOrder && !looksLikeMallOrder && !looksLikeDelivery("$title\n$body")) {
             Log.d(
                 TAG,
@@ -129,10 +130,10 @@ class CheckShippingNotificationListenerService : NotificationListenerService() {
         groupSummary: Boolean,
         reason: String,
     ) {
-        val prefs = getSharedPreferences(PREFS, MODE_PRIVATE)
+        val prefs = getSharedPreferences(CapturePrefs.NAME, MODE_PRIVATE)
         val dedupeKey = "$channel|$packageName|${title.orEmpty()}|$body"
         val queue = try {
-            JSONArray(prefs.getString(KEY_PENDING_CAPTURES, "[]"))
+            JSONArray(prefs.getString(CapturePrefs.KEY_PENDING_CAPTURES, "[]"))
         } catch (_: Exception) {
             JSONArray()
         }
@@ -165,7 +166,7 @@ class CheckShippingNotificationListenerService : NotificationListenerService() {
         )
 
         prefs.edit()
-            .putString(KEY_PENDING_CAPTURES, next.toString())
+            .putString(CapturePrefs.KEY_PENDING_CAPTURES, next.toString())
             .putString("last_channel", channel)
             .putString("last_package", packageName)
             .putString("last_title", title)
@@ -188,8 +189,6 @@ class CheckShippingNotificationListenerService : NotificationListenerService() {
             activeService?.scanActiveNotifications("flutter_request") ?: 0
 
         private const val TAG = "CheckShippingNotify"
-        private const val PREFS = "kakao_accessibility"
-        private const val KEY_PENDING_CAPTURES = "pending_captures"
         private const val MAX_PENDING_CAPTURES = 25
 
         private val DELIVERY_HINTS = listOf(
@@ -197,6 +196,5 @@ class CheckShippingNotificationListenerService : NotificationListenerService() {
             Regex("""배송|배달|택배|집화|집하|상품\s*인수"""),
             Regex("""CJ\s*대한통운|대한통운|한진|롯데\s*택배|롯데택배|우체국|로젠|쿠팡"""),
         )
-        private val MALL_ORDER_HINT = Regex("""\[[^\]]+\][\s\S]{0,30}?주문\s*완료""")
     }
 }

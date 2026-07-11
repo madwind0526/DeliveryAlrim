@@ -168,4 +168,30 @@ void main() {
       );
     },
   );
+
+  test(
+    'a real courier invoice always wins over the card-order title match',
+    () {
+      // Title ends in "카드" (matches card_order_generic) *and* the body
+      // has a real, courier-tagged invoice number — labeled_invoice_generic
+      // must win so the shipment stays trackable instead of collapsing
+      // into a bare card-payment placeholder.
+      final result = engine.parse(
+        RawCapture(
+          channel: CaptureChannel.sms,
+          sender: '신한카드',
+          title: '신한카드',
+          body:
+              '[한진택배] 고객님의 상품이 배송 출발하였습니다.\n'
+              '운송장번호: 512345678901\n'
+              '결제금액: 23,500원',
+          capturedAt: DateTime(2026, 7, 12, 18, 20),
+        ),
+      );
+
+      expect(result.matched, isTrue);
+      expect(result.parcel!.courierCode, 'hanjin');
+      expect(result.parcel!.trackingNumber, '512345678901');
+    },
+  );
 }

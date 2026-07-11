@@ -28,12 +28,18 @@
       "priority": 12
     },
     {
+      "id": "labeled_invoice_generic",
+      "sourceTypes": ["sms", "kakao", "gmail", "mall_app"],
+      "bodyRegex": "(?:운송장|송장|등기)\\s*번호\\s*[:：]?\\s*(?<invoice>\\d[\\d\\-]{8,15}\\d)",
+      "priority": 50
+    },
+    {
       "id": "card_order_bracket_tag",
       "sourceTypes": ["sms", "kakao", "gmail"],
       "bodyRegex": "\\[[^\\]]*카드\\][\\s\\S]*?(?<amount>\\d{1,3}(?:,\\d{3})*)\\s*원",
       "courierCode": "card_order",
       "statusHint": "registered",
-      "priority": 4
+      "priority": 51
     },
     {
       "id": "card_order_generic",
@@ -42,13 +48,7 @@
       "bodyRegex": "(?<amount>\\d{1,3}(?:,\\d{3})*)\\s*원",
       "courierCode": "card_order",
       "statusHint": "registered",
-      "priority": 5
-    },
-    {
-      "id": "labeled_invoice_generic",
-      "sourceTypes": ["sms", "kakao", "gmail", "mall_app"],
-      "bodyRegex": "(?:운송장|송장|등기)\\s*번호\\s*[:：]?\\s*(?<invoice>\\d[\\d\\-]{8,15}\\d)",
-      "priority": 50
+      "priority": 52
     },
     {
       "id": "mall_order_complete_generic",

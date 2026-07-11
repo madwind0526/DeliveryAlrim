@@ -50,18 +50,17 @@ class KakaoAccessibilityService : AccessibilityService() {
 
     private fun handleMessage(message: String) {
         val invoice = INVOICE_RE.find(message)?.groupValues?.getOrNull(1)
-        // Card-payment alimtalk (e.g. "[삼성카드] ... 9,831원 ...") and mall
-        // order-confirmation alimtalk (e.g. "[OO몰] 주문 완료 안내 ...") have
-        // no invoice number at all — accept them too so RuleEngine's
+        // Card-payment and mall order-confirmation notification channels
+        // have no invoice number at all — accept them too so RuleEngine's
         // card_order_bracket_tag / mall_order_complete_generic rules get a
         // chance to see them.
-        val isCardOrder = CARD_ORDER_RE.containsMatchIn(message)
-        val isMallOrder = MALL_ORDER_RE.containsMatchIn(message)
+        val isCardOrder = CapturePrefs.CARD_ORDER_RE.containsMatchIn(message)
+        val isMallOrder = CapturePrefs.MALL_ORDER_RE.containsMatchIn(message)
         if (invoice.isNullOrBlank() && !isCardOrder && !isMallOrder) return
 
         val capturedAtMillis = System.currentTimeMillis()
 
-        getSharedPreferences(PREFS, MODE_PRIVATE)
+        getSharedPreferences(CapturePrefs.NAME, MODE_PRIVATE)
             .edit()
             .putString("last_channel", "kakao")
             .putString("last_package", KAKAO_PACKAGE)
@@ -74,10 +73,10 @@ class KakaoAccessibilityService : AccessibilityService() {
     }
 
     private fun enqueueCapture(body: String, capturedAtMillis: Long) {
-        val prefs = getSharedPreferences(PREFS, MODE_PRIVATE)
+        val prefs = getSharedPreferences(CapturePrefs.NAME, MODE_PRIVATE)
         val dedupeKey = "kakao|$KAKAO_PACKAGE|$body"
         val queue = try {
-            JSONArray(prefs.getString(KEY_PENDING_CAPTURES, "[]"))
+            JSONArray(prefs.getString(CapturePrefs.KEY_PENDING_CAPTURES, "[]"))
         } catch (_: Exception) {
             JSONArray()
         }
@@ -100,7 +99,7 @@ class KakaoAccessibilityService : AccessibilityService() {
                 .put("capturedAtMillis", capturedAtMillis)
                 .put("dedupeKey", dedupeKey),
         )
-        prefs.edit().putString(KEY_PENDING_CAPTURES, next.toString()).apply()
+        prefs.edit().putString(CapturePrefs.KEY_PENDING_CAPTURES, next.toString()).apply()
         BackgroundCaptureSync.trigger(this)
     }
 
@@ -108,13 +107,9 @@ class KakaoAccessibilityService : AccessibilityService() {
         private const val TAG = "CheckShippingKakao"
         private const val KAKAO_PACKAGE = "com.kakao.talk"
         private const val ALIMTALK_TITLE_ID = "com.kakao.talk:id/alimtalk_title"
-        private const val PREFS = "kakao_accessibility"
-        private const val KEY_PENDING_CAPTURES = "pending_captures"
         private const val MAX_SEEN = 100
         private const val MAX_PENDING_CAPTURES = 25
 
         private val INVOICE_RE = Regex("""운송장번호\s*[:：]\s*([0-9\-]{9,20})""")
-        private val CARD_ORDER_RE = Regex("""\[[^\]]*카드\][\s\S]{0,80}?\d{1,3}(?:,\d{3})*\s*원""")
-        private val MALL_ORDER_RE = Regex("""\[[^\]]+\][\s\S]{0,30}?주문\s*완료""")
     }
 }
