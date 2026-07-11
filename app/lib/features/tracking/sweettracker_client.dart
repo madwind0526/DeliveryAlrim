@@ -44,7 +44,7 @@ class SweettrackerException implements Exception {
   String toString() => message;
 }
 
-/// Thin client for the Sweet Tracker (스마트택배) trackingInfo API.
+/// Thin client for the Sweet Tracker trackingInfo API.
 /// Optional feature: only used when the user registered an API key.
 /// The free key is rate-limited (~100 calls/day), so callers must go
 /// through the daily quota guard — never poll this in a loop.
@@ -119,9 +119,17 @@ class SweettrackerClient {
           ),
         );
       }
+      // A null time carries no ordering signal, so it can't just compare
+      // equal to everything (that's not transitive and can leave dated
+      // entries out of order around it) — sort unknown-time entries first
+      // so `lastDetail` prefers a dated entry over an undated one.
       details.sort((a, b) {
-        if (a.time == null || b.time == null) return 0;
-        return a.time!.compareTo(b.time!);
+        final at = a.time;
+        final bt = b.time;
+        if (at == null && bt == null) return 0;
+        if (at == null) return -1;
+        if (bt == null) return 1;
+        return at.compareTo(bt);
       });
     }
 

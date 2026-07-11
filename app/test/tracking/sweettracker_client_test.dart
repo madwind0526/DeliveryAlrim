@@ -63,5 +63,30 @@ void main() {
         throwsA(isA<SweettrackerException>()),
       );
     });
+
+    test(
+      'a detail with no parseable time does not disturb chronological '
+      'order, and lastDetail still prefers a dated entry',
+      () {
+        const body = '''
+        {
+          "level": 6,
+          "complete": true,
+          "trackingDetails": [
+            {"time": 1784077200000, "where": "역삼동", "kind": "배달완료", "level": 6},
+            {"where": "알수없음", "kind": "미상", "level": 3},
+            {"time": 1783990800000, "where": "서울강남", "kind": "집화처리", "level": 2}
+          ]
+        }
+        ''';
+        final result = SweettrackerClient.parseResponse(body);
+
+        expect(result.details, hasLength(3));
+        expect(result.details.first.time, isNull);
+        expect(result.details[1].kind, '집화처리');
+        expect(result.details[2].kind, '배달완료');
+        expect(result.lastDetail!.kind, '배달완료');
+      },
+    );
   });
 }
