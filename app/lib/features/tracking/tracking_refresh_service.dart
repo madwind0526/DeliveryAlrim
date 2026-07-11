@@ -52,7 +52,6 @@ class RefreshSummary {
   final int updated;
   final int unchanged;
   final int failed;
-  final int skipped;
   final bool quotaExceeded;
   final bool missingKey;
 
@@ -60,12 +59,9 @@ class RefreshSummary {
     this.updated = 0,
     this.unchanged = 0,
     this.failed = 0,
-    this.skipped = 0,
     this.quotaExceeded = false,
     this.missingKey = false,
   });
-
-  int get attempted => updated + unchanged + failed;
 }
 
 /// Optional on-demand tracking sync via the Sweet Tracker API.
@@ -87,6 +83,17 @@ class TrackingRefreshService {
   /// Refreshes one parcel from the tracking API and merges the result
   /// through the normal repository path (monotonic status, dedupe).
   Future<RefreshResult> refreshParcel(Parcel parcel) async {
+    final apiKey = await keyStore.read();
+    if (apiKey == null) {
+      return const RefreshResult(RefreshOutcome.missingKey);
+    }
+    return _refreshWithKey(parcel, apiKey);
+  }
+
+  /// Same as [refreshParcel] but takes an already-fetched API key, so a
+  /// caller refreshing many parcels in a row (see [refreshAllActive])
+  /// only pays for one secure-storage read instead of one per parcel.
+  Future<RefreshResult> _refreshWithKey(Parcel parcel, String apiKey) async {
     if (parcel.status.isTerminal) {
       return const RefreshResult(RefreshOutcome.alreadyDone);
     }
@@ -94,10 +101,6 @@ class TrackingRefreshService {
     final apiCode = courier?.sweettrackerCode;
     if (apiCode == null) {
       return const RefreshResult(RefreshOutcome.unsupported);
-    }
-    final apiKey = await keyStore.read();
-    if (apiKey == null) {
-      return const RefreshResult(RefreshOutcome.missingKey);
     }
     if (!await quota.tryConsume()) {
       return const RefreshResult(RefreshOutcome.quotaExceeded);
@@ -147,18 +150,20 @@ class TrackingRefreshService {
 
   /// Refreshes every non-terminal parcel with a supported courier.
   /// Sequential on purpose: cheap on quota accounting and gentle on the
-  /// free-tier API.
+  /// free-tier API. Reads the API key once up front and reuses it for
+  /// every parcel instead of re-reading secure storage per parcel.
   Future<RefreshSummary> refreshAllActive() async {
-    if (await keyStore.read() == null) {
+    final apiKey = await keyStore.read();
+    if (apiKey == null) {
       return const RefreshSummary(missingKey: true);
     }
 
     final parcels = await repository.watchActive().first;
-    var updated = 0, unchanged = 0, failed = 0, skipped = 0;
+    var updated = 0, unchanged = 0, failed = 0;
     var quotaExceeded = false;
 
     for (final parcel in parcels) {
-      final result = await refreshParcel(parcel);
+      final result = await _refreshWithKey(parcel, apiKey);
       switch (result.outcome) {
         case RefreshOutcome.updated:
           updated++;
@@ -167,11 +172,11 @@ class TrackingRefreshService {
         case RefreshOutcome.failed:
           failed++;
         case RefreshOutcome.unsupported || RefreshOutcome.alreadyDone:
-          skipped++;
+          break;
         case RefreshOutcome.quotaExceeded:
           quotaExceeded = true;
         case RefreshOutcome.missingKey:
-          return const RefreshSummary(missingKey: true);
+          break; // Unreachable: _refreshWithKey never returns this.
       }
       if (quotaExceeded) break;
     }
@@ -179,7 +184,6 @@ class TrackingRefreshService {
       updated: updated,
       unchanged: unchanged,
       failed: failed,
-      skipped: skipped,
       quotaExceeded: quotaExceeded,
     );
   }

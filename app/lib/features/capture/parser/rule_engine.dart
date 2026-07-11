@@ -172,13 +172,11 @@ class RuleEngine {
     if (orderNo != null) {
       seed = 'order:$orderNo';
     } else {
-      final normalized = (product ?? text.split('\n').first)
-          .replaceAll(RegExp(r'\s+'), ' ')
-          .trim();
+      final normalized = _collapseWhitespace(product ?? text.split('\n').first);
       final bucket = capture.capturedAt.toIso8601String().substring(0, 10);
       seed = 'product:$normalized|$bucket';
     }
-    final key = 'cp:${sha1.convert(utf8.encode(seed))}';
+    final key = _syntheticKey('cp', seed);
 
     final status = _resolveStatus(rule, text);
     return ExtractedParcel(
@@ -200,25 +198,25 @@ class RuleEngine {
 
   /// Card-payment approval alerts have no courier/tracking info yet, just
   /// proof an order happened — matched either by the notification title
-  /// ending in "카드" (SMS/Gmail, any issuer) or a "[OO카드]" tag in the
-  /// body (KakaoTalk 알림톡 channels, where title/sender are never
-  /// populated by the accessibility capture path). Avoids hand-listing
-  /// every Korean card company.
+  /// ending in the card-issuer suffix (SMS/Gmail, any issuer) or a
+  /// bracketed issuer tag in the body (KakaoTalk notification channels,
+  /// where title/sender are never populated by the accessibility capture
+  /// path). Avoids hand-listing every Korean card company.
   ///
   /// The same purchase can trigger alerts on more than one channel (SMS
-  /// *and* a Kakao 알림톡, say) with different wording, so the dedupe key
-  /// is built from the transaction facts that stay constant across
-  /// channels — issuer + amount + "MM/DD HH:MM" — rather than the raw
-  /// text; that lets a repeat on another channel merge into the same row
+  /// and a Kakao notification, say) with different wording, so the dedupe
+  /// key is built from the transaction facts that stay constant across
+  /// channels — issuer + amount + timestamp — rather than the raw text;
+  /// that lets a repeat on another channel merge into the same row
   /// instead of creating a duplicate. Falls back to hashing the full body
   /// when no timestamp is found (still dedupes exact repeats).
   ///
-  /// The merchant name (right after the "MM/DD HH:MM" stamp, e.g.
-  /// "TeslaMotors") rides along in productName purely so the calendar can
-  /// later spot "this order shipped" once a real courier notification
-  /// mentions the same merchant/mall — see
-  /// ParcelDayIndex._resolvedEndDay. This app still never merges the two
-  /// rows; it just stops carrying the placeholder forward once resolved.
+  /// The merchant name (right after the timestamp, e.g. "TeslaMotors")
+  /// rides along in productName purely so the calendar can later spot
+  /// "this order shipped" once a real courier notification mentions the
+  /// same merchant/mall — see ParcelDayIndex._resolvedEndDay. This app
+  /// still never merges the two rows; it just stops carrying the
+  /// placeholder forward once resolved.
   ExtractedParcel _extractCardOrder(
     RawCapture capture,
     String text,
@@ -234,30 +232,31 @@ class RuleEngine {
 
     final seed = datetime != null
         ? '${issuer ?? ''}|${amount ?? ''}|$datetime'
-        : '${issuer ?? ''}|${text.replaceAll(RegExp(r'\s+'), ' ').trim()}';
-    final key = 'card:${sha1.convert(utf8.encode(seed))}';
-
-    final productName = amount == null
-        ? null
-        : (merchant == null || merchant.isEmpty)
-        ? '$amount원 결제'
-        : '$amount원 결제 · $merchant';
+        : '${issuer ?? ''}|${_collapseWhitespace(text)}';
+    final key = _syntheticKey('card', seed);
 
     return ExtractedParcel(
       courierCode: Couriers.cardOrder.code,
       trackingNumber: key,
       status: ParcelStatus.registered,
-      productName: productName,
+      productName: _cardProductName(amount, merchant),
       mallName: issuer,
       matchedRuleId: rule.id,
     );
   }
 
-  /// Mall order-confirmation alimtalk/SMS/email ("[OO몰] 주문 완료 안내"
-  /// with a 주문번호 and 결제금액, but nothing shipping-related yet) —
-  /// same idea as [_extractCardOrder]: register the order now so it isn't
-  /// lost, and let the real shipment register separately later under its
-  /// own courier once a courier notification actually arrives.
+  String? _cardProductName(String? amount, String? merchant) {
+    if (amount == null) return null;
+    if (merchant == null || merchant.isEmpty) return '$amount원 결제';
+    return '$amount원 결제 · $merchant';
+  }
+
+  /// Mall order-confirmation alimtalk/SMS/email (a bracketed mall tag
+  /// followed by an order-complete notice, an order number, and an
+  /// amount, but nothing shipping-related yet) — same idea as
+  /// [_extractCardOrder]: register the order now so it isn't lost, and
+  /// let the real shipment register separately later under its own
+  /// courier once a courier notification actually arrives.
   ExtractedParcel _extractMallOrder(
     RawCapture capture,
     String text,
@@ -270,8 +269,8 @@ class RuleEngine {
 
     final seed = orderNo != null
         ? 'order:$orderNo'
-        : '${mallName ?? ''}|${text.replaceAll(RegExp(r'\s+'), ' ').trim()}';
-    final key = 'mall:${sha1.convert(utf8.encode(seed))}';
+        : '${mallName ?? ''}|${_collapseWhitespace(text)}';
+    final key = _syntheticKey('mall', seed);
 
     return ExtractedParcel(
       courierCode: Couriers.mallOrder.code,
@@ -283,6 +282,16 @@ class RuleEngine {
       matchedRuleId: rule.id,
     );
   }
+
+  /// Builds a `<prefix>:<sha1>` synthetic tracking key shared by every
+  /// extractor that has no real invoice number (Coupang direct, card
+  /// orders, mall orders) so the hashing scheme stays identical across
+  /// all of them.
+  static String _syntheticKey(String prefix, String seed) =>
+      '$prefix:${sha1.convert(utf8.encode(seed))}';
+
+  static String _collapseWhitespace(String s) =>
+      s.replaceAll(RegExp(r'\s+'), ' ').trim();
 
   DateTime? _extractArrival(
     String text,
