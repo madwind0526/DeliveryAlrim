@@ -25,9 +25,10 @@ class _CheckShippingAppState extends ConsumerState<CheckShippingApp>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    AppBackgroundBridge.setGoHomeHandler(() async {
-      ref.read(routerProvider).go('/');
-    });
+    AppBackgroundBridge.setHandlers(
+      onGoHome: () async => ref.read(routerProvider).go('/'),
+      onSyncNow: _syncLatestCapture,
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) => _syncLatestCapture());
     _loadThemeMode();
   }

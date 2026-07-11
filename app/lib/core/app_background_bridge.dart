@@ -3,10 +3,21 @@ import 'package:flutter/services.dart';
 class AppBackgroundBridge {
   static const _channel = MethodChannel('check_shipping/app_control');
 
-  static void setGoHomeHandler(Future<void> Function() handler) {
+  /// Registers both native-initiated calls this app responds to:
+  /// [onGoHome] for the back-gesture "send to background" request, and
+  /// [onSyncNow] when MainActivity.requestForegroundSync() asks the
+  /// already-running app to sync a just-captured notification instead of
+  /// Android spinning up a separate headless engine for it.
+  static void setHandlers({
+    required Future<void> Function() onGoHome,
+    required Future<void> Function() onSyncNow,
+  }) {
     _channel.setMethodCallHandler((call) async {
-      if (call.method == 'goHome') {
-        await handler();
+      switch (call.method) {
+        case 'goHome':
+          await onGoHome();
+        case 'syncNow':
+          await onSyncNow();
       }
     });
   }

@@ -94,6 +94,7 @@ class KakaoAccessibilityService : AccessibilityService() {
                 .put("dedupeKey", dedupeKey),
         )
         prefs.edit().putString(KEY_PENDING_CAPTURES, next.toString()).apply()
+        BackgroundCaptureSync.trigger(this)
     }
 
     companion object {

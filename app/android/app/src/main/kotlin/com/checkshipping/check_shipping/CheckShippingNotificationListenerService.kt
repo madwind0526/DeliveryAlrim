@@ -169,6 +169,7 @@ class CheckShippingNotificationListenerService : NotificationListenerService() {
             TAG,
             "captured notification channel=$channel package=$packageName groupSummary=$groupSummary reason=$reason",
         )
+        BackgroundCaptureSync.trigger(this)
     }
 
     companion object {
