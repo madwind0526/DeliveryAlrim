@@ -48,6 +48,23 @@
     }
   },
   {
+    "id": "kakao_card_payment_alert",
+    "note": "Real-shape redacted: card-company 알림톡 payment alert, no invoice number at all — title/sender are null like real Kakao captures",
+    "channel": "kakao",
+    "packageName": "com.kakao.talk",
+    "title": null,
+    "body": "[삼성카드]\n삼성6475승인 신*종\n9,831원 일시불\n07/10 08:27\nTeslaMotors\n\n비인증거래 안내\n삼성카드에서는 일부 카드정보(카드번호, 유효기간 등)로 결제가 진행되는 '비인증거래' 발생 시, 본인 이용 여부를 확인하기 위해 회원님께 알림톡을 보내드리고 있습니다.",
+    "capturedAt": "2026-07-10T20:06:00",
+    "expected": {
+      "matched": true,
+      "courierCode": "card_order",
+      "trackingNumberPrefix": "card:",
+      "status": "registered",
+      "productName": "9,831원 결제",
+      "mallName": "삼성카드"
+    }
+  },
+  {
     "id": "kakao_cj_delivered_alimtalk_real_shape",
     "note": "Real-shape redacted: CJ대한통운 알림톡 delivered notice from Android accessibility node",
     "channel": "kakao",

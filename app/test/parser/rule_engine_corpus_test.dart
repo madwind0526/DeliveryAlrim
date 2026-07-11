@@ -127,4 +127,45 @@ void main() {
     expect(delivered.parcel!.status, ParcelStatus.delivered);
     expect(started.parcel!.status, ParcelStatus.outForDelivery);
   });
+
+  test(
+    'card order: same purchase via SMS and Kakao (different wording) → same key',
+    () {
+      final sms = engine.parse(
+        RawCapture(
+          channel: CaptureChannel.sms,
+          sender: '신한카드',
+          title: '신한카드',
+          body: '신한카드 승인 정*민(1234)\n23,500원 일시불\n07/12 18:20 이마트24',
+          capturedAt: DateTime(2026, 7, 12, 18, 20),
+        ),
+      );
+      final kakao = engine.parse(
+        RawCapture(
+          channel: CaptureChannel.kakao,
+          packageName: 'com.kakao.talk',
+          body:
+              '[신한카드]\n신한1234승인 정*민\n23,500원 일시불\n07/12 18:20\n이마트24\n\n결제 안내 문자입니다.',
+          capturedAt: DateTime(2026, 7, 12, 18, 21),
+        ),
+      );
+      final differentPurchase = engine.parse(
+        RawCapture(
+          channel: CaptureChannel.kakao,
+          packageName: 'com.kakao.talk',
+          body: '[신한카드]\n신한1234승인 정*민\n5,000원 일시불\n07/12 19:00\n스타벅스',
+          capturedAt: DateTime(2026, 7, 12, 19, 0),
+        ),
+      );
+
+      expect(sms.matched, isTrue);
+      expect(kakao.matched, isTrue);
+      expect(differentPurchase.matched, isTrue);
+      expect(sms.parcel!.trackingNumber, kakao.parcel!.trackingNumber);
+      expect(
+        sms.parcel!.trackingNumber,
+        isNot(differentPurchase.parcel!.trackingNumber),
+      );
+    },
+  );
 }

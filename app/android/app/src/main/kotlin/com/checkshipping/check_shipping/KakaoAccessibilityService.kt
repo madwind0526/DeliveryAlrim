@@ -50,7 +50,11 @@ class KakaoAccessibilityService : AccessibilityService() {
 
     private fun handleMessage(message: String) {
         val invoice = INVOICE_RE.find(message)?.groupValues?.getOrNull(1)
-        if (invoice.isNullOrBlank()) return
+        // Card-payment alimtalk (e.g. "[삼성카드] ... 9,831원 ...") has no
+        // invoice number at all — accept it too so RuleEngine's
+        // card_order_bracket_tag rule gets a chance to see it.
+        val isCardOrder = CARD_ORDER_RE.containsMatchIn(message)
+        if (invoice.isNullOrBlank() && !isCardOrder) return
 
         val capturedAtMillis = System.currentTimeMillis()
 
@@ -107,5 +111,6 @@ class KakaoAccessibilityService : AccessibilityService() {
         private const val MAX_PENDING_CAPTURES = 25
 
         private val INVOICE_RE = Regex("""운송장번호\s*[:：]\s*([0-9\-]{9,20})""")
+        private val CARD_ORDER_RE = Regex("""\[[^\]]*카드\][\s\S]{0,80}?\d{1,3}(?:,\d{3})*\s*원""")
     }
 }

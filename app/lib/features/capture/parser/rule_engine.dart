@@ -189,14 +189,25 @@ class RuleEngine {
     );
   }
 
+  static final _cardDatetimeRe = RegExp(r'(\d{2}/\d{2}\s+\d{2}:\d{2})');
+  static final _cardBracketIssuerRe = RegExp(r'\[([^\]]*카드)\]');
+
   /// Card-payment approval alerts have no courier/tracking info yet, just
-  /// proof an order happened — any issuer whose notification title ends in
-  /// "카드" matches (avoids hand-listing every Korean card company). Keyed
-  /// by a hash of the full body so an identical reposted notification
-  /// dedupes, while distinct purchases (different amount/merchant/time)
-  /// get their own row. If the real shipment notification arrives later,
-  /// it registers separately under its own courier — this app doesn't
-  /// try to link the two.
+  /// proof an order happened — matched either by the notification title
+  /// ending in "카드" (SMS/Gmail, any issuer) or a "[OO카드]" tag in the
+  /// body (KakaoTalk 알림톡 channels, where title/sender are never
+  /// populated by the accessibility capture path). Avoids hand-listing
+  /// every Korean card company.
+  ///
+  /// The same purchase can trigger alerts on more than one channel (SMS
+  /// *and* a Kakao 알림톡, say) with different wording, so the dedupe key
+  /// is built from the transaction facts that stay constant across
+  /// channels — issuer + amount + "MM/DD HH:MM" — rather than the raw
+  /// text; that lets a repeat on another channel merge into the same row
+  /// instead of creating a duplicate. Falls back to hashing the full body
+  /// when no timestamp is found (still dedupes exact repeats). If the
+  /// real shipment notification arrives later, it registers separately
+  /// under its own courier — this app doesn't try to link the two.
   ExtractedParcel _extractCardOrder(
     RawCapture capture,
     String text,
@@ -204,8 +215,14 @@ class RuleEngine {
     ParseRule rule,
   ) {
     final amount = _namedOrNull(match, 'amount');
-    final issuer = (capture.title ?? capture.sender)?.trim();
-    final seed = '${issuer ?? ''}|${text.replaceAll(RegExp(r'\s+'), ' ').trim()}';
+    final datetime = _cardDatetimeRe.firstMatch(text)?.group(1);
+    final issuer =
+        (capture.title ?? capture.sender)?.trim() ??
+        _cardBracketIssuerRe.firstMatch(text)?.group(1);
+
+    final seed = datetime != null
+        ? '${issuer ?? ''}|${amount ?? ''}|$datetime'
+        : '${issuer ?? ''}|${text.replaceAll(RegExp(r'\s+'), ' ').trim()}';
     final key = 'card:${sha1.convert(utf8.encode(seed))}';
 
     return ExtractedParcel(
