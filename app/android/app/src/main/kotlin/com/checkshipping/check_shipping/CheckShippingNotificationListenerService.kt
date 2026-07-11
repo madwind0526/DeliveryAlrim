@@ -53,7 +53,12 @@ class CheckShippingNotificationListenerService : NotificationListenerService() {
             )
             return
         }
-        if (!looksLikeDelivery("$title\n$body")) {
+        // Card-payment alerts (any issuer) rarely mention shipping words at
+        // all, so they'd otherwise get dropped here before RuleEngine's
+        // card_order_generic rule (titleMatch "카드$") ever sees them. Gate
+        // on the same signal so this pre-filter doesn't silently swallow them.
+        val looksLikeCardOrder = title?.trim()?.endsWith("카드") == true
+        if (!looksLikeCardOrder && !looksLikeDelivery("$title\n$body")) {
             Log.d(
                 TAG,
                 "ignored non-delivery notification package=$packageName groupSummary=$isGroupSummary reason=$reason",
