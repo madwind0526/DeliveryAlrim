@@ -194,6 +194,9 @@ class RuleEngine {
 
   static final _cardDatetimeRe = RegExp(r'(\d{2}/\d{2}\s+\d{2}:\d{2})');
   static final _cardBracketIssuerRe = RegExp(r'\[([^\]]*카드)\]');
+  static final _cardMerchantRe = RegExp(
+    r'\d{2}/\d{2}\s+\d{2}:\d{2}\s*\n?\s*([^\n]{1,40})',
+  );
 
   /// Card-payment approval alerts have no courier/tracking info yet, just
   /// proof an order happened — matched either by the notification title
@@ -208,9 +211,14 @@ class RuleEngine {
   /// channels — issuer + amount + "MM/DD HH:MM" — rather than the raw
   /// text; that lets a repeat on another channel merge into the same row
   /// instead of creating a duplicate. Falls back to hashing the full body
-  /// when no timestamp is found (still dedupes exact repeats). If the
-  /// real shipment notification arrives later, it registers separately
-  /// under its own courier — this app doesn't try to link the two.
+  /// when no timestamp is found (still dedupes exact repeats).
+  ///
+  /// The merchant name (right after the "MM/DD HH:MM" stamp, e.g.
+  /// "TeslaMotors") rides along in productName purely so the calendar can
+  /// later spot "this order shipped" once a real courier notification
+  /// mentions the same merchant/mall — see
+  /// ParcelDayIndex._resolvedEndDay. This app still never merges the two
+  /// rows; it just stops carrying the placeholder forward once resolved.
   ExtractedParcel _extractCardOrder(
     RawCapture capture,
     String text,
@@ -219,6 +227,7 @@ class RuleEngine {
   ) {
     final amount = _namedOrNull(match, 'amount');
     final datetime = _cardDatetimeRe.firstMatch(text)?.group(1);
+    final merchant = _cardMerchantRe.firstMatch(text)?.group(1)?.trim();
     final issuer =
         (capture.title ?? capture.sender)?.trim() ??
         _cardBracketIssuerRe.firstMatch(text)?.group(1);
@@ -228,11 +237,17 @@ class RuleEngine {
         : '${issuer ?? ''}|${text.replaceAll(RegExp(r'\s+'), ' ').trim()}';
     final key = 'card:${sha1.convert(utf8.encode(seed))}';
 
+    final productName = amount == null
+        ? null
+        : (merchant == null || merchant.isEmpty)
+        ? '$amount원 결제'
+        : '$amount원 결제 · $merchant';
+
     return ExtractedParcel(
       courierCode: Couriers.cardOrder.code,
       trackingNumber: key,
       status: ParcelStatus.registered,
-      productName: amount != null ? '$amount원 결제' : null,
+      productName: productName,
       mallName: issuer,
       matchedRuleId: rule.id,
     );

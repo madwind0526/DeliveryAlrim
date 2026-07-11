@@ -9,12 +9,18 @@ Parcel _parcel({
   DateTime? registeredAt,
   DateTime? expectedArrivalDate,
   DateTime? deliveredAt,
+  String courierCode = 'kr.cjlogistics',
+  String trackingNumber = '1234567890',
+  String? productName,
+  String? mallName,
 }) {
   return Parcel(
     id: id,
-    courierCode: 'kr.cjlogistics',
-    trackingNumber: '1234567890',
+    courierCode: courierCode,
+    trackingNumber: trackingNumber,
     status: status,
+    productName: productName,
+    mallName: mallName,
     registeredAt: registeredAt ?? DateTime(2026, 7, 7, 9),
     expectedArrivalDate: expectedArrivalDate,
     deliveredAt: deliveredAt,
@@ -144,5 +150,87 @@ void main() {
       expect(index[day8]!.single.statusOnDay, ParcelStatus.expired);
       expect(index[day9], isNull);
     });
+
+    test(
+      'mall order placeholder stops carrying forward once a matching real shipment registers',
+      () {
+        final order = _parcel(
+          id: 'order1',
+          courierCode: 'mall_order',
+          trackingNumber: 'mall:abc',
+          status: ParcelStatus.registered,
+          registeredAt: DateTime(2026, 7, 7, 9),
+          mallName: '복지포탈',
+          productName: '옥향미 특등급 10kg',
+        );
+        final shipment = _parcel(
+          id: 'shipment1',
+          courierCode: 'cj',
+          trackingNumber: '999888777',
+          status: ParcelStatus.pickedUp,
+          registeredAt: DateTime(2026, 7, 9, 10),
+          mallName: '복지포탈',
+          productName: '옥향미 특등급 10kg 세트',
+        );
+        final index = buildParcelDayIndex(
+          parcels: [order, shipment],
+          events: const [],
+          today: DateTime(2026, 7, 11, 22),
+        );
+
+        // Registered before the shipment: still shows the order.
+        expect(
+          index[day7]!.any((e) => e.parcel.id == 'order1'),
+          isTrue,
+        );
+        expect(
+          index[day8]!.any((e) => e.parcel.id == 'order1'),
+          isTrue,
+        );
+        // On/after the shipment's day, the placeholder stops appearing.
+        final day9 = DateTime(2026, 7, 9);
+        final day11 = DateTime(2026, 7, 11);
+        expect(
+          index[day9]!.any((e) => e.parcel.id == 'order1'),
+          isFalse,
+        );
+        expect(
+          index[day11]?.any((e) => e.parcel.id == 'order1') ?? false,
+          isFalse,
+        );
+      },
+    );
+
+    test(
+      'unrelated real shipment does not resolve a different order placeholder',
+      () {
+        final order = _parcel(
+          id: 'order1',
+          courierCode: 'card_order',
+          trackingNumber: 'card:abc',
+          status: ParcelStatus.registered,
+          registeredAt: DateTime(2026, 7, 7, 9),
+          mallName: '삼성카드',
+          productName: '9,831원 결제 · TeslaMotors',
+        );
+        final unrelatedShipment = _parcel(
+          id: 'shipment1',
+          courierCode: 'hanjin',
+          trackingNumber: '111222333',
+          status: ParcelStatus.pickedUp,
+          registeredAt: DateTime(2026, 7, 9, 10),
+          mallName: '지마켓',
+          productName: '무선 이어폰',
+        );
+        final index = buildParcelDayIndex(
+          parcels: [order, unrelatedShipment],
+          events: const [],
+          today: DateTime(2026, 7, 11, 22),
+        );
+
+        final day11 = DateTime(2026, 7, 11);
+        expect(index[day11]!.any((e) => e.parcel.id == 'order1'), isTrue);
+      },
+    );
   });
 }

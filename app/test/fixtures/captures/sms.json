@@ -94,7 +94,7 @@
       "courierCode": "card_order",
       "trackingNumberPrefix": "card:",
       "status": "registered",
-      "productName": "12,900원 결제",
+      "productName": "12,900원 결제 · 쿠팡",
       "mallName": "신한카드",
       "arrivalOffsetDays": null
     }
@@ -112,7 +112,7 @@
       "courierCode": "card_order",
       "trackingNumberPrefix": "card:",
       "status": "registered",
-      "productName": "5,000원 결제",
+      "productName": "5,000원 결제 · 스타벅스코리아",
       "mallName": "KB국민카드"
     }
   },
