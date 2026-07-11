@@ -63,9 +63,15 @@ class CheckShippingNotificationListenerService : NotificationListenerService() {
         val looksLikeCardOrder = title?.trim()?.endsWith("카드") == true
         val looksLikeMallOrder = CapturePrefs.MALL_ORDER_RE.containsMatchIn("$title\n$body")
         if (!looksLikeCardOrder && !looksLikeMallOrder && !looksLikeDelivery("$title\n$body")) {
-            Log.d(
+            // Logged at INFO (not DEBUG) and with a text excerpt so a
+            // notification this pre-filter drops is still diagnosable from
+            // logcat if the JSON rules (assets/parse_rules_fallback.json)
+            // change to accept something this filter no longer mirrors —
+            // there's no other recovery path for a native-side drop.
+            Log.i(
                 TAG,
-                "ignored non-delivery notification package=$packageName groupSummary=$isGroupSummary reason=$reason",
+                "ignored non-delivery notification package=$packageName groupSummary=$isGroupSummary " +
+                    "reason=$reason excerpt=${body.take(60)}",
             )
             return
         }

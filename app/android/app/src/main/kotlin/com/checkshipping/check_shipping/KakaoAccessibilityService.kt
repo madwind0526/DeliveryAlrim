@@ -56,7 +56,14 @@ class KakaoAccessibilityService : AccessibilityService() {
         // chance to see them.
         val isCardOrder = CapturePrefs.CARD_ORDER_RE.containsMatchIn(message)
         val isMallOrder = CapturePrefs.MALL_ORDER_RE.containsMatchIn(message)
-        if (invoice.isNullOrBlank() && !isCardOrder && !isMallOrder) return
+        if (invoice.isNullOrBlank() && !isCardOrder && !isMallOrder) {
+            // Logged so a message this pre-filter drops is still
+            // diagnosable from logcat if the JSON rules
+            // (assets/parse_rules_fallback.json) change to accept
+            // something this filter no longer mirrors.
+            Log.i(TAG, "ignored non-matching kakao message excerpt=${message.take(60)}")
+            return
+        }
 
         val capturedAtMillis = System.currentTimeMillis()
 

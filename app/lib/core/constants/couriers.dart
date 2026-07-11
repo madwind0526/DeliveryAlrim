@@ -75,9 +75,9 @@ abstract final class Couriers {
 
   /// Virtual "courier" for mall order-confirmation alimtalk/SMS/email that
   /// has no courier/tracking number yet (e.g. "[OO몰] 주문 완료 안내" with
-  /// a 주문번호 and 결제금액 but nothing shipping-related) — same idea as
-  /// [cardOrder], just triggered by the order-confirmation template
-  /// instead of a card-payment approval.
+  /// an order number and payment amount but nothing shipping-related) —
+  /// same idea as [cardOrder], just triggered by the order-confirmation
+  /// template instead of a card-payment approval.
   static const mallOrder = Courier(
     code: 'mall_order',
     nameKo: '쇼핑몰주문',
