@@ -14,6 +14,8 @@
 | 코드 패턴 | 광고/피싱 스크리닝은 CaptureScreener를 RuleEngine.parse 입구에 두어 모든 채널이 단일 지점을 통과. 광고=법정 표기 하드마커만 즉시 거부, 피싱=신호 2개 이상 조합 시 격리함(QuarantineRows) 보관 후 사용자 검토. 자동 삭제 금지 | `knowledge/PATTERNS.md` |
 | 코드 패턴 | 기존 배송 업데이트 E2E 테스트: tools/test_notify 모듈 재사용 + 운송장번호를 기존 배송 것으로 고정해 발송하면 병합 경로(상태 전진/도착예정 갱신)를 실기기에서 검증 가능. 2026-07-11 5종 시나리오(신규/완료 전환/역행 방지/광고/피싱) 전부 통과. 주의: 수신 메일을 PC에서 먼저 읽으면 폰 알림이 안 뜰 수 있음 | `knowledge/PATTERNS.md` |
 | 버그/해결 | "메일 여러 통인데 일부만 반영" 증상은 유실이 아니라 타이밍: Gmail이 배치로 동기화하면 개별 알림 5건이 같은 초에 게시되고 리스너는 전부 큐에 담는다(삼성 실기기 확인). 앱은 열림/재개 시에만 큐를 처리하므로 마지막 캡처 후 앱을 다시 열어야 반영됨. 진단은 adb logcat -s CheckShippingNotify로 캡처 로그 확인 | `knowledge/trouble-shooting.md` |
+| 버그/해결 | 커스텀 Dart headless entrypoint(예: NotificationListenerService에서 띄우는 별도 FlutterEngine)를 릴리즈(AOT) 빌드에서 executeDartEntrypoint로 실행하면 "Dart_LookupLibrary: library '...' not found" 로 실패한다. AOT는 main.dart에서 import로 도달 가능한 라이브러리만 스냅샷에 포함하므로, @pragma('vm:entry-point')만으로는 부족하고 main.dart에 `// ignore: unused_import`로 해당 파일을 반드시 import해야 함(app/lib/main.dart, app/lib/background_sync.dart 참고) | `knowledge/trouble-shooting.md` |
+| 코드 패턴 | 헤드리스 백그라운드 동기화(알림 도착 시 앱을 안 열어도 파싱/저장): 네이티브가 이미 떠 있는 포그라운드 Flutter 엔진에 syncNow를 위임하거나(MainActivity.requestForegroundSync), 없으면 4초 디바운스 후 임시 FlutterEngine을 띄워 동일한 kakaoCaptureSyncProvider 경로를 실행하고 backgroundSyncDone 콜백으로 즉시 종료. path_provider_android처럼 dartPluginClass 기반 federated 플러그인은 main() 래퍼가 없는 커스텀 entrypoint에서 자동 등록되지 않으므로 PathProviderAndroid.registerWith()를 직접 호출해야 함(background_sync.dart). 콜드 엔진 기동은 실기기에서 알림→반영까지 약 27초 소요(Vulkan/Impeller 드라이버 초기화 포함), 60초 타임아웃 안전장치 있음. 2026-07-11 실기기 검증: 앱 강제종료 상태에서 메일만으로 자동 등록 확인 | `knowledge/PATTERNS.md` |
 
 ---
 
