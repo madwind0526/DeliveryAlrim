@@ -201,7 +201,7 @@ class _Header extends StatelessWidget {
             ),
             const Divider(),
             Text('${StringsKo.courierLabel}: $courierName'),
-            if (!parcel.trackingNumber.startsWith('cp:'))
+            if (!parcel.hasSyntheticTrackingNumber)
               Text(
                 '${StringsKo.trackingNumberLabel}: ${parcel.trackingNumber}',
               ),

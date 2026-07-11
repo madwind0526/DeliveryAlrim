@@ -61,7 +61,27 @@ abstract final class Couriers {
     isDirect: true,
   );
 
-  static const all = <Courier>[cj, hanjin, lotte, epost, logen, coupangDirect];
+  /// Virtual "courier" for card-payment approval alerts (any issuer whose
+  /// notification title ends in "카드" — see RuleEngine's card_order rule).
+  /// These have no shipment yet, just a registered order; a real courier
+  /// sighting later creates its own separate row rather than merging in.
+  static const cardOrder = Courier(
+    code: 'card_order',
+    nameKo: '카드결제',
+    sweettrackerCode: null,
+    invoicePattern: r'^card:[0-9a-f]{40}$',
+    isDirect: true,
+  );
+
+  static const all = <Courier>[
+    cj,
+    hanjin,
+    lotte,
+    epost,
+    logen,
+    coupangDirect,
+    cardOrder,
+  ];
 
   static Courier? byCode(String code) {
     for (final c in all) {

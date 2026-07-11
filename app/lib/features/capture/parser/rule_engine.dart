@@ -95,6 +95,9 @@ class RuleEngine {
       if (rule.courierCode == Couriers.coupangDirect.code) {
         return ParseResult.success(_extractCoupang(capture, text, rule));
       }
+      if (rule.courierCode == Couriers.cardOrder.code) {
+        return ParseResult.success(_extractCardOrder(capture, text, match, rule));
+      }
 
       final invoiceRaw = _namedOrNull(match, 'invoice');
       if (invoiceRaw == null) continue;
@@ -182,6 +185,35 @@ class RuleEngine {
       productName: product,
       mallName: '쿠팡',
       expectedArrivalDate: _extractArrival(text, capture.capturedAt, status),
+      matchedRuleId: rule.id,
+    );
+  }
+
+  /// Card-payment approval alerts have no courier/tracking info yet, just
+  /// proof an order happened — any issuer whose notification title ends in
+  /// "카드" matches (avoids hand-listing every Korean card company). Keyed
+  /// by a hash of the full body so an identical reposted notification
+  /// dedupes, while distinct purchases (different amount/merchant/time)
+  /// get their own row. If the real shipment notification arrives later,
+  /// it registers separately under its own courier — this app doesn't
+  /// try to link the two.
+  ExtractedParcel _extractCardOrder(
+    RawCapture capture,
+    String text,
+    RegExpMatch match,
+    ParseRule rule,
+  ) {
+    final amount = _namedOrNull(match, 'amount');
+    final issuer = (capture.title ?? capture.sender)?.trim();
+    final seed = '${issuer ?? ''}|${text.replaceAll(RegExp(r'\s+'), ' ').trim()}';
+    final key = 'card:${sha1.convert(utf8.encode(seed))}';
+
+    return ExtractedParcel(
+      courierCode: Couriers.cardOrder.code,
+      trackingNumber: key,
+      status: ParcelStatus.registered,
+      productName: amount != null ? '$amount원 결제' : null,
+      mallName: issuer,
       matchedRuleId: rule.id,
     );
   }

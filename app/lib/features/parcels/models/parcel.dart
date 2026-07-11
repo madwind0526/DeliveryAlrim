@@ -80,6 +80,12 @@ class Parcel {
     required this.registeredAt,
   });
 
+  /// True when [trackingNumber] is a synthesized dedupe key rather than a
+  /// real invoice number (Coupang direct delivery, card-payment orders) —
+  /// UI hides these instead of showing the raw hash.
+  bool get hasSyntheticTrackingNumber =>
+      trackingNumber.startsWith('cp:') || trackingNumber.startsWith('card:');
+
   Parcel copyWith({
     ParcelStatus? status,
     String? productName,

@@ -82,6 +82,54 @@
     }
   },
   {
+    "id": "sms_shinhan_card_order",
+    "note": "Card approval SMS: title ends in '카드' (any issuer) registers an order, not a shipment",
+    "channel": "sms",
+    "sender": "신한카드",
+    "title": "신한카드",
+    "body": "[Web발신]\n신한카드 승인 홍*동(1234)\n12,900원 일시불\n07/12 14:23 쿠팡",
+    "capturedAt": "2026-07-12T14:23:00",
+    "expected": {
+      "matched": true,
+      "courierCode": "card_order",
+      "trackingNumberPrefix": "card:",
+      "status": "registered",
+      "productName": "12,900원 결제",
+      "mallName": "신한카드",
+      "arrivalOffsetDays": null
+    }
+  },
+  {
+    "id": "sms_kb_card_order_other_issuer",
+    "note": "Card approval SMS from a different issuer, still matches generically",
+    "channel": "sms",
+    "sender": "KB국민카드",
+    "title": "KB국민카드",
+    "body": "KB국민카드 승인 5,000원 일시불 07/12 09:10 스타벅스코리아",
+    "capturedAt": "2026-07-12T09:10:00",
+    "expected": {
+      "matched": true,
+      "courierCode": "card_order",
+      "trackingNumberPrefix": "card:",
+      "status": "registered",
+      "productName": "5,000원 결제",
+      "mallName": "KB국민카드"
+    }
+  },
+  {
+    "id": "sms_card_mentioned_in_body_negative",
+    "note": "Negative: body mentions 카드 but title doesn't end with it, and there's no courier/invoice — must not match",
+    "channel": "sms",
+    "sender": "15881234",
+    "title": null,
+    "body": "[Web발신] 국민카드로 결제가 완료되었습니다. 이용해 주셔서 감사합니다.",
+    "capturedAt": "2026-07-12T10:00:00",
+    "expected": {
+      "matched": false,
+      "reason": "noRuleMatched"
+    }
+  },
+  {
     "id": "sms_coupang_ad_negative",
     "note": "Negative: Coupang ad; caught by the ad screener before rule matching",
     "channel": "sms",

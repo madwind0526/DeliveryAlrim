@@ -26,7 +26,7 @@ class ParcelTile extends StatelessWidget {
           [
             courierName,
             if (parcel.mallName != null) parcel.mallName!,
-            if (!parcel.trackingNumber.startsWith('cp:')) parcel.trackingNumber,
+            if (!parcel.hasSyntheticTrackingNumber) parcel.trackingNumber,
           ].join(' · '),
         ),
         trailing: ParcelStatusBadge(status: parcel.status),

@@ -232,7 +232,7 @@ class _ParcelCard extends StatelessWidget {
               [
                 courierName,
                 if (parcel.mallName != null) parcel.mallName!,
-                if (!parcel.trackingNumber.startsWith('cp:'))
+                if (!parcel.hasSyntheticTrackingNumber)
                   parcel.trackingNumber,
               ].join(' · '),
             ),
