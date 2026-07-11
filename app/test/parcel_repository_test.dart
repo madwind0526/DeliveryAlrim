@@ -138,4 +138,70 @@ void main() {
       expect(done.single.deliveredAt, firstDeliveredAt);
     },
   );
+
+  test(
+    'a real shipment supersedes a matching card-order placeholder so it '
+    'leaves the active list',
+    () async {
+      await repo.upsert(
+        Parcel(
+          id: '',
+          courierCode: 'card_order',
+          trackingNumber: 'card:aaaa',
+          status: ParcelStatus.registered,
+          productName: '23,500원 결제 · 이마트24',
+          mallName: '신한카드',
+          registeredAt: DateTime(2026, 7, 4, 18, 20),
+        ),
+      );
+      await repo.upsert(
+        Parcel(
+          id: '',
+          courierCode: 'hanjin',
+          trackingNumber: '512345678901',
+          status: ParcelStatus.registered,
+          mallName: '이마트24',
+          registeredAt: DateTime(2026, 7, 5, 9),
+        ),
+      );
+
+      final active = await repo.watchActive().first;
+      expect(active, hasLength(1));
+      expect(active.single.courierCode, 'hanjin');
+
+      final done = await repo.watchDone().first;
+      expect(done.single.courierCode, 'card_order');
+      expect(done.single.status, ParcelStatus.superseded);
+    },
+  );
+
+  test(
+    'a real shipment does not supersede an unrelated card-order placeholder',
+    () async {
+      await repo.upsert(
+        Parcel(
+          id: '',
+          courierCode: 'card_order',
+          trackingNumber: 'card:bbbb',
+          status: ParcelStatus.registered,
+          productName: '5,000원 결제 · 스타벅스',
+          mallName: '신한카드',
+          registeredAt: DateTime(2026, 7, 4, 19),
+        ),
+      );
+      await repo.upsert(
+        Parcel(
+          id: '',
+          courierCode: 'hanjin',
+          trackingNumber: '512345678901',
+          status: ParcelStatus.registered,
+          mallName: '이마트24',
+          registeredAt: DateTime(2026, 7, 5, 9),
+        ),
+      );
+
+      final active = await repo.watchActive().first;
+      expect(active, hasLength(2));
+    },
+  );
 }

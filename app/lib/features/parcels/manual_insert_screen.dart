@@ -168,7 +168,8 @@ class _ManualInsertScreenState extends ConsumerState<ManualInsertScreen> {
                   ),
                   items: [
                     for (final s in ParcelStatus.values)
-                      DropdownMenuItem(value: s, child: Text(s.labelKo)),
+                      if (s != ParcelStatus.superseded)
+                        DropdownMenuItem(value: s, child: Text(s.labelKo)),
                   ],
                   onChanged: (s) => setState(() => _status = s!),
                 ),

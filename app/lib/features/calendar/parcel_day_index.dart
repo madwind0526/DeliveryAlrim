@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 
-import '../../core/constants/couriers.dart';
+import '../parcels/models/order_placeholder.dart';
 import '../parcels/models/parcel.dart';
 import '../parcels/models/tracking_event.dart';
 
@@ -62,7 +62,7 @@ Map<DateTime, List<DayParcelEntry>> buildParcelDayIndex({
   // placeholder × candidate comparison inside the loop below.
   final resolveCandidates = [
     for (final p in parcels)
-      if (!_isOrderPlaceholder(p)) _ResolveCandidate.from(p),
+      if (!isOrderPlaceholder(p)) _ResolveCandidate.from(p),
   ];
 
   for (final parcel in parcels) {
@@ -87,7 +87,7 @@ Map<DateTime, List<DayParcelEntry>> buildParcelDayIndex({
       // looks like the same purchase (matching mall/product text), stop
       // carrying the placeholder forward from that shipment's day —
       // earlier days keep showing it as registered, unaffected.
-      if (_isOrderPlaceholder(parcel)) {
+      if (isOrderPlaceholder(parcel)) {
         final resolvedEnd = _resolvedEndDay(parcel, resolveCandidates);
         if (resolvedEnd != null && resolvedEnd.isBefore(endDay)) {
           endDay = resolvedEnd;
@@ -149,26 +149,6 @@ ParcelStatus _statusAtEndOf(
   return parcel.status;
 }
 
-bool _isOrderPlaceholder(Parcel p) =>
-    p.courierCode == Couriers.cardOrder.code ||
-    p.courierCode == Couriers.mallOrder.code;
-
-final _matchPunctuationRe = RegExp(r'[\s\W]+');
-
-/// Loose text match: lowercased, whitespace/punctuation stripped, then
-/// containment either direction. Real shipment text never matches an
-/// order-confirmation's wording exactly, so this stays forgiving on
-/// purpose — it only needs to avoid matching unrelated orders, not be
-/// precise about *how* similar two strings are.
-String _normalizeForMatch(String s) =>
-    s.toLowerCase().replaceAll(_matchPunctuationRe, '');
-
-bool _normalizedTextOverlaps(String? a, String? b) {
-  if (a == null || b == null) return false;
-  if (a.length < 2 || b.length < 2) return false;
-  return a.contains(b) || b.contains(a);
-}
-
 /// A non-placeholder parcel's registration time plus its match text,
 /// normalized once so [_resolvedEndDay] never re-normalizes the same
 /// mallName/productName on every placeholder it's compared against.
@@ -185,10 +165,12 @@ class _ResolveCandidate {
 
   factory _ResolveCandidate.from(Parcel p) => _ResolveCandidate(
     registeredAt: p.registeredAt,
-    mallName: p.mallName == null ? null : _normalizeForMatch(p.mallName!),
+    mallName: p.mallName == null
+        ? null
+        : normalizeForOrderMatch(p.mallName!),
     productName: p.productName == null
         ? null
-        : _normalizeForMatch(p.productName!),
+        : normalizeForOrderMatch(p.productName!),
   );
 }
 
@@ -203,18 +185,20 @@ DateTime? _resolvedEndDay(
 ) {
   final placeholderMall = placeholder.mallName == null
       ? null
-      : _normalizeForMatch(placeholder.mallName!);
+      : normalizeForOrderMatch(placeholder.mallName!);
   final placeholderProduct = placeholder.productName == null
       ? null
-      : _normalizeForMatch(placeholder.productName!);
+      : normalizeForOrderMatch(placeholder.productName!);
 
   _ResolveCandidate? resolver;
   for (final candidate in candidates) {
     if (candidate.registeredAt.isBefore(placeholder.registeredAt)) continue;
-    final looksLikeSamePurchase =
-        _normalizedTextOverlaps(placeholderMall, candidate.mallName) ||
-        _normalizedTextOverlaps(placeholderProduct, candidate.productName);
-    if (!looksLikeSamePurchase) continue;
+    final sameAsCandidate =
+        orderMatchTextOverlaps(placeholderMall, candidate.mallName) ||
+        orderMatchTextOverlaps(placeholderProduct, candidate.productName) ||
+        orderMatchTextOverlaps(placeholderMall, candidate.productName) ||
+        orderMatchTextOverlaps(placeholderProduct, candidate.mallName);
+    if (!sameAsCandidate) continue;
     if (resolver == null ||
         candidate.registeredAt.isBefore(resolver.registeredAt)) {
       resolver = candidate;

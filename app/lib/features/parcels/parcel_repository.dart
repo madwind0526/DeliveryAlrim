@@ -1,7 +1,9 @@
 import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../core/constants/couriers.dart';
 import '../../core/local_db/local_db.dart';
+import 'models/order_placeholder.dart';
 import 'models/parcel.dart';
 import 'models/tracking_event.dart';
 
@@ -128,8 +130,52 @@ class LocalParcelRepository implements ParcelRepository {
               ),
             );
       }
+
+      if (!isOrderPlaceholder(result)) {
+        await _supersedeMatchingPlaceholders(result);
+      }
       return statusChanged;
     });
+  }
+
+  /// A real (non-placeholder) shipment was just registered — close out any
+  /// card/mall order placeholder that looks like the same purchase and is
+  /// still pending, so it stops cluttering the active list forever. There
+  /// is no shared ID between an order alert and the courier's own
+  /// notification, so this only runs one-way (real shipment resolves an
+  /// earlier placeholder); it mirrors the calendar's day-index heuristic
+  /// (parcel_day_index.dart) but here it actually changes the parcel's
+  /// status instead of just adjusting how long the calendar displays it.
+  Future<void> _supersedeMatchingPlaceholders(Parcel realShipment) async {
+    final placeholderCodes = [Couriers.cardOrder.code, Couriers.mallOrder.code];
+    final rows =
+        await (_db.select(_db.parcelRows)..where(
+              (t) =>
+                  t.courierCode.isIn(placeholderCodes) &
+                  t.status.equals(ParcelStatus.registered.code),
+            ))
+            .get();
+
+    for (final row in rows) {
+      final placeholder = _toDomain(row);
+      if (placeholder.registeredAt.isAfter(realShipment.registeredAt)) {
+        continue;
+      }
+      if (!looksLikeSamePurchase(placeholder, realShipment)) continue;
+
+      final resolved = placeholder.copyWith(status: ParcelStatus.superseded);
+      await _db.into(_db.parcelRows).insertOnConflictUpdate(_toRow(resolved));
+      await _db
+          .into(_db.trackingEventRows)
+          .insert(
+            TrackingEventRowsCompanion.insert(
+              parcelId: resolved.id,
+              eventTime: realShipment.registeredAt,
+              statusCode: ParcelStatus.superseded.code,
+              description: const Value('실제 배송으로 확인되어 종료됨'),
+            ),
+          );
+    }
   }
 
   @override
