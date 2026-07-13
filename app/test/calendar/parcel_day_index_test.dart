@@ -152,7 +152,45 @@ void main() {
     });
 
     test(
-      'mall order placeholder stops carrying forward once a matching real shipment registers',
+      'card/mall order placeholder appears only on its registration day, '
+      'never carries forward',
+      () {
+        final cardOrder = _parcel(
+          id: 'order1',
+          courierCode: 'card_order',
+          trackingNumber: 'card:abc',
+          status: ParcelStatus.registered,
+          registeredAt: DateTime(2026, 7, 7, 9),
+        );
+        final mallOrder = _parcel(
+          id: 'order2',
+          courierCode: 'mall_order',
+          trackingNumber: 'mall:abc',
+          status: ParcelStatus.registered,
+          registeredAt: DateTime(2026, 7, 7, 9),
+        );
+        final index = buildParcelDayIndex(
+          parcels: [cardOrder, mallOrder],
+          events: const [],
+          today: DateTime(2026, 7, 11, 22),
+        );
+
+        expect(index[day7]!.any((e) => e.parcel.id == 'order1'), isTrue);
+        expect(index[day7]!.any((e) => e.parcel.id == 'order2'), isTrue);
+        expect(
+          index[day8]?.any((e) => e.parcel.id == 'order1') ?? false,
+          isFalse,
+        );
+        expect(
+          index[day8]?.any((e) => e.parcel.id == 'order2') ?? false,
+          isFalse,
+        );
+      },
+    );
+
+    test(
+      'a matching real shipment registering later does not bring an order '
+      'placeholder back — it stays a single-day record',
       () {
         final order = _parcel(
           id: 'order1',
@@ -178,58 +216,14 @@ void main() {
           today: DateTime(2026, 7, 11, 22),
         );
 
-        // Registered before the shipment: still shows the order.
+        expect(index[day7]!.any((e) => e.parcel.id == 'order1'), isTrue);
         expect(
-          index[day7]!.any((e) => e.parcel.id == 'order1'),
-          isTrue,
+          index[day8]?.any((e) => e.parcel.id == 'order1') ?? false,
+          isFalse,
         );
-        expect(
-          index[day8]!.any((e) => e.parcel.id == 'order1'),
-          isTrue,
-        );
-        // On/after the shipment's day, the placeholder stops appearing.
+        // The real shipment still carries forward as usual.
         final day9 = DateTime(2026, 7, 9);
-        final day11 = DateTime(2026, 7, 11);
-        expect(
-          index[day9]!.any((e) => e.parcel.id == 'order1'),
-          isFalse,
-        );
-        expect(
-          index[day11]?.any((e) => e.parcel.id == 'order1') ?? false,
-          isFalse,
-        );
-      },
-    );
-
-    test(
-      'unrelated real shipment does not resolve a different order placeholder',
-      () {
-        final order = _parcel(
-          id: 'order1',
-          courierCode: 'card_order',
-          trackingNumber: 'card:abc',
-          status: ParcelStatus.registered,
-          registeredAt: DateTime(2026, 7, 7, 9),
-          mallName: '삼성카드',
-          productName: '9,831원 결제 · TeslaMotors',
-        );
-        final unrelatedShipment = _parcel(
-          id: 'shipment1',
-          courierCode: 'hanjin',
-          trackingNumber: '111222333',
-          status: ParcelStatus.pickedUp,
-          registeredAt: DateTime(2026, 7, 9, 10),
-          mallName: '지마켓',
-          productName: '무선 이어폰',
-        );
-        final index = buildParcelDayIndex(
-          parcels: [order, unrelatedShipment],
-          events: const [],
-          today: DateTime(2026, 7, 11, 22),
-        );
-
-        final day11 = DateTime(2026, 7, 11);
-        expect(index[day11]!.any((e) => e.parcel.id == 'order1'), isTrue);
+        expect(index[day9]!.any((e) => e.parcel.id == 'shipment1'), isTrue);
       },
     );
 
@@ -242,8 +236,6 @@ void main() {
           trackingNumber: 'card:abc',
           status: ParcelStatus.registered,
           registeredAt: DateTime(2026, 7, 7, 9), // ordered this morning
-          mallName: '삼성카드',
-          productName: '9,831원 결제 · TeslaMotors',
         );
         final shipment = _parcel(
           id: 'shipment1',
@@ -251,8 +243,6 @@ void main() {
           trackingNumber: '999888777',
           status: ParcelStatus.outForDelivery,
           registeredAt: DateTime(2026, 7, 7, 14), // ships out same afternoon
-          mallName: 'TeslaMotors',
-          productName: 'TeslaMotors 액세서리',
         );
 
         // Same-day snapshot: both the order and the shipment are visible.

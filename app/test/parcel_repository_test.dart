@@ -140,8 +140,7 @@ void main() {
   );
 
   test(
-    'a real shipment supersedes a matching card-order placeholder so it '
-    'leaves the active list',
+    'card/mall order placeholders never appear in the active or done list',
     () async {
       await repo.upsert(
         Parcel(
@@ -152,6 +151,17 @@ void main() {
           productName: '23,500원 결제 · 이마트24',
           mallName: '신한카드',
           registeredAt: DateTime(2026, 7, 4, 18, 20),
+        ),
+      );
+      await repo.upsert(
+        Parcel(
+          id: '',
+          courierCode: 'mall_order',
+          trackingNumber: 'mall:bbbb',
+          status: ParcelStatus.registered,
+          productName: '옥향미 특등급 10kg',
+          mallName: '복지포탈',
+          registeredAt: DateTime(2026, 7, 4, 19),
         ),
       );
       await repo.upsert(
@@ -170,38 +180,12 @@ void main() {
       expect(active.single.courierCode, 'hanjin');
 
       final done = await repo.watchDone().first;
-      expect(done.single.courierCode, 'card_order');
-      expect(done.single.status, ParcelStatus.superseded);
-    },
-  );
+      expect(done, isEmpty);
 
-  test(
-    'a real shipment does not supersede an unrelated card-order placeholder',
-    () async {
-      await repo.upsert(
-        Parcel(
-          id: '',
-          courierCode: 'card_order',
-          trackingNumber: 'card:bbbb',
-          status: ParcelStatus.registered,
-          productName: '5,000원 결제 · 스타벅스',
-          mallName: '신한카드',
-          registeredAt: DateTime(2026, 7, 4, 19),
-        ),
-      );
-      await repo.upsert(
-        Parcel(
-          id: '',
-          courierCode: 'hanjin',
-          trackingNumber: '512345678901',
-          status: ParcelStatus.registered,
-          mallName: '이마트24',
-          registeredAt: DateTime(2026, 7, 5, 9),
-        ),
-      );
-
-      final active = await repo.watchActive().first;
-      expect(active, hasLength(2));
+      // They're still readable via watchAll — the calendar needs them for
+      // their registration-day entry even though the list screens don't.
+      final all = await repo.watchAll().first;
+      expect(all, hasLength(3));
     },
   );
 }

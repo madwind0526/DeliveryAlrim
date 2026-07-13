@@ -10,13 +10,7 @@ enum ParcelStatus {
   outForDelivery('out_for_delivery', '배송출발'),
   delivered('delivered', '배달완료'),
   expired('expired', '만료'),
-  invalid('invalid', '번호오류'),
-
-  /// A card/mall order placeholder whose real shipment showed up under
-  /// its own courier — see order_placeholder.dart. Never assigned to a
-  /// real courier shipment, so it's excluded from the manual-entry
-  /// status picker (manual_insert_screen.dart).
-  superseded('superseded', '실제 배송 확인됨');
+  invalid('invalid', '번호오류');
 
   final String code;
   final String labelKo;
@@ -37,10 +31,7 @@ enum ParcelStatus {
 
   /// Statuses shown in the terminal tab and excluded from polling.
   bool get isTerminal =>
-      this == delivered ||
-      this == expired ||
-      this == invalid ||
-      this == superseded;
+      this == delivered || this == expired || this == invalid;
 
   /// Monotonic guard: only allow forward transitions.
   bool canTransitionTo(ParcelStatus next) => next.index > index;
@@ -49,7 +40,7 @@ enum ParcelStatus {
     registered || preparing => const Color(0xFF9E9E9E),
     pickedUp || inTransit || outForDelivery => const Color(0xFF6B6B6B),
     delivered => const Color(0xFF7A7A7A),
-    expired || invalid || superseded => const Color(0xFF5F5F5F),
+    expired || invalid => const Color(0xFF5F5F5F),
   };
 }
 
